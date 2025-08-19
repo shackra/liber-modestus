@@ -1,0 +1,17 @@
+[project]
+name = "backend"
+version = "0.1.0"
+description = "Backend for Liber Modestus: Yet Another 1962 Roman Catholic Missal for the Traditional Latin Mass"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = []
+
+[dependency-groups]
+dev = []
+
+[tool.black]
+line-length = 88
+
+[tool.isort]
+profile = "black"
+line_length = 88

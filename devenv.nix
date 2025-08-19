@@ -11,7 +11,12 @@
   env.GREET = "devenv";
 
   # https://devenv.sh/packages/
-  packages = [ pkgs.git ];
+  packages = [
+    pkgs.git
+    pkgs.black
+    pkgs.ty
+    pkgs.isort
+  ];
 
   # https://devenv.sh/languages/
   languages = {
@@ -20,7 +25,7 @@
       directory = "./backend";
       uv = {
         enable = true;
-        # sync.enable = true;
+        sync.enable = true;
       };
     };
 
@@ -49,7 +54,7 @@
     hello
     git --version
     echo "yarn version `yarn --version`"
-    echo "uv version `uv --version`"
+    uv --version
   '';
 
   # https://devenv.sh/tasks/
@@ -68,6 +73,8 @@
   git-hooks.hooks = {
     shellcheck.enable = true;
     black.enable = true;
+    #uv.enable = true; # NOTE(shackra): not available yet?
+    isort.enable = true;
     biome.enable = true;
     nil.enable = true;
     commitizen.enable = true;
