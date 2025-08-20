@@ -1,13 +1,17 @@
 [project]
-name = "backend"
+name = "liber-modestus"
 version = "0.1.0"
 description = "Backend for Liber Modestus: Yet Another 1962 Roman Catholic Missal for the Traditional Latin Mass"
 readme = "README.md"
 requires-python = ">=3.13"
-dependencies = []
+dependencies = [
+    "python-dateutil>=2.9.0.post0",
+]
 
 [dependency-groups]
-dev = []
+dev = [
+    "pytest>=8.4.1",
+]
 
 [tool.black]
 line-length = 88
@@ -15,3 +19,11 @@ line-length = 88
 [tool.isort]
 profile = "black"
 line_length = 88
+
+[tool.pytest.ini_options]
+pythonpath = [
+  "src"
+]
+
+[tool.ty.environment]
+extra-paths = ["./src"]
