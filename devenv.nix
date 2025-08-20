@@ -27,6 +27,10 @@
         enable = true;
         sync.enable = true;
       };
+      # NOTE(shackra): required for ty
+      venv = {
+        enable = true;
+      };
     };
 
     javascript = {
@@ -49,6 +53,22 @@
   scripts.hello.exec = ''
     echo hello from $GREET
   '';
+  scripts.format.exec = ''
+    echo "isort"
+    ${pkgs.isort}/bin/isort --sg 'src/divinum-officium/**/*.py' --om ${config.devenv.root}/backend
+    echo "black"
+    ${pkgs.black}/bin/black --exclude 'src/divinum-officium/.*/.*\.py' ${config.devenv.root}/backend
+  '';
+
+  scripts.test.exec = ''
+    cd ${config.devenv.root}/backend
+    pytest --failed-first .
+  '';
+
+  scripts.check.exec = ''
+    cd ${config.devenv.root}/backend
+    ${pkgs.ty}/bin/ty check
+  '';
 
   enterShell = ''
     hello
@@ -64,10 +84,7 @@
   # };
 
   # https://devenv.sh/tests/
-  enterTest = ''
-    echo "Running tests"
-    git --version | grep --color=auto "${pkgs.git.version}"
-  '';
+  enterTest = '''';
 
   # https://devenv.sh/git-hooks/
   git-hooks.hooks = {
