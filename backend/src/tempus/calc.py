@@ -6,12 +6,36 @@ from dateutil import easter
 from dateutil.relativedelta import relativedelta
 
 
-def get_tempora_for_advent(now: datetime.datetime) -> Optional[str]:
-    # Advent never starts before nov 27
-    if now < datetime.datetime(now.year, 11, 27):
-        return None
+def get_absolute_date_septuagesima_sunday(year: int) -> datetime.date:
+    # TODO(shackra): on 4098 AD, raise from the death and
+    # TODO(shackra): update this code to work with years after 4099
+    if year < 1583 or year > 4099:
+        raise ValueError(f"{year} cannot be before 1583 or after 4099")
 
-    christmas = datetime.datetime(now.year, 12, 25)
+    septuagesima_sunday = easter.easter(year, easter.EASTER_WESTERN) - relativedelta(
+        days=63
+    )
+
+    return septuagesima_sunday
+
+
+def get_absolute_date_23_sunday_after_pent(year: int) -> datetime.date:
+    if year < 1583 or year > 4099:
+        raise ValueError(f"{year} cannot be before 1583 or after 4099")
+
+    empty_tomb = easter.easter(year, easter.EASTER_WESTERN)
+    first_sunday_of_pentecost = empty_tomb + relativedelta(days=49)
+
+    return first_sunday_of_pentecost + relativedelta(weeks=22)
+
+
+def get_absolute_date_first_sunday_of_advent(year: int) -> datetime.date:
+    # TODO(shackra): on 4098 AD, raise from the death and
+    # TODO(shackra): update this code to work with years after 4099
+    if year < 1583 or year > 4099:
+        raise ValueError(f"{year} cannot be before 1583 or after 4099")
+
+    christmas = datetime.datetime(year, 12, 25)
     x_weeks_before_christmas: relativedelta = christmas - relativedelta(
         weeks=4 if christmas.isoweekday() == 7 else 3
     )
@@ -21,10 +45,36 @@ def get_tempora_for_advent(now: datetime.datetime) -> Optional[str]:
         days=days_since_sunday
     )
 
+    return first_sunday.date()
+
+
+def get_amount_sundays_after_epiphany(year: int) -> int:
+    epiphany = datetime.date(year, 1, 6)
+    septuagesima_sunday = get_absolute_date_septuagesima_sunday(year)
+
+    days = (septuagesima_sunday - epiphany).days
+
+    return days // 7
+
+
+def get_amount_sundays_between_pent23_advent(year: int) -> int:
+    advent = get_absolute_date_first_sunday_of_advent(year)
+    pent23 = get_absolute_date_23_sunday_after_pent(year)
+
+    return ((advent - pent23).days // 7) - 2  # excludes Pent 23 and Advent
+
+
+def get_tempora_for_advent(now: datetime.datetime) -> Optional[str]:
+    # Advent never starts before nov 27
+    if now < datetime.datetime(now.year, 11, 27):
+        return None
+
+    first_sunday = get_absolute_date_first_sunday_of_advent(now.year)
+
     if now < first_sunday:
         return None
 
-    delta: datetime.timedelta = now - first_sunday
+    delta: datetime.timedelta = now.date() - first_sunday
 
     sunday_of_advent = (delta.days // 7) + 1
     # NOTE(shackra): 7 is Sunday, 1 is Monday
