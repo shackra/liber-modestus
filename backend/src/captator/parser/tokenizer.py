@@ -8,8 +8,9 @@ class Tokenizer:
     def __init__(self, text: str):
         self.text = text
         self.tokens: List[Token] = []
+        self._tokenize()
 
-    def tokenize(self):
+    def _tokenize(self):
         token_specification = [
             ("LPAREN", r"\("),
             ("RPAREN", r"\)"),

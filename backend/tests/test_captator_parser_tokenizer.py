@@ -7,7 +7,6 @@ def test_tokenize_text_1():
 Secunda die infra Octavam Epiphaniæ;;Semiduplex;;5.6;;ex Sancti/01-06
     """
     tokenized = parser.Tokenizer(text)
-    tokenized.tokenize()
 
     assert len(tokenized) == 17
 
@@ -22,7 +21,6 @@ Suffragium=Maria2;Papa;Ecclesia;;
 Infra octavam Epiphaniæ Domini
     """
     tokenized = parser.Tokenizer(text)
-    tokenized.tokenize()
 
     assert len(tokenized) == 18
 
@@ -38,7 +36,6 @@ Deus, judícium tuum Regi da: et justítiam tuam Fílio Regis.
 v. Ecce, advénit dominátor Dóminus: et regnum in manu ejus et potéstas et impérium.
     """
     tokenized = parser.Tokenizer(text)
-    tokenized.tokenize()
 
     assert len(tokenized) == 60
 
@@ -66,6 +63,5 @@ def test_tokenize_text_4():
 @Tempora/Nat30
     """
     tokenized = parser.Tokenizer(text)
-    tokenized.tokenize()
 
     assert len(tokenized) == 58
