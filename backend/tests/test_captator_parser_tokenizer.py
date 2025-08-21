@@ -8,7 +8,7 @@ Secunda die infra Octavam Epiphaniæ;;Semiduplex;;5.6;;ex Sancti/01-06
     """
     tokenized = parser.Tokenizer(text)
 
-    assert len(tokenized) == 17
+    assert len(tokenized) == 19
 
 
 def test_tokenize_text_2():
@@ -22,7 +22,7 @@ Infra octavam Epiphaniæ Domini
     """
     tokenized = parser.Tokenizer(text)
 
-    assert len(tokenized) == 18
+    assert len(tokenized) == 24
 
 
 def test_tokenize_text_3():
@@ -37,7 +37,7 @@ v. Ecce, advénit dominátor Dóminus: et regnum in manu ejus et potéstas et im
     """
     tokenized = parser.Tokenizer(text)
 
-    assert len(tokenized) == 60
+    assert len(tokenized) == 67
 
 
 def test_tokenize_text_4():
@@ -64,4 +64,4 @@ def test_tokenize_text_4():
     """
     tokenized = parser.Tokenizer(text)
 
-    assert len(tokenized) == 58
+    assert len(tokenized) == 73
