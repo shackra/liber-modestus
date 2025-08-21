@@ -60,7 +60,7 @@
     ${pkgs.black}/bin/black --exclude 'src/divinum-officium/.*/.*\.py' ${config.devenv.root}/backend
   '';
 
-  scripts.test.exec = ''
+  scripts.unittest.exec = ''
     cd ${config.devenv.root}/backend
     pytest --failed-first .
   '';
