@@ -85,6 +85,9 @@ def get_tempora_for_advent(now: datetime.datetime) -> Optional[str]:
     if sunday_of_advent == 4 and day_of_week_after_advent > 5:
         return None
 
+    if now >= datetime.datetime(now.year, 12, 24):
+        return None
+
     # `Adv` matches what's on src/divinum-officium/web/www/missa/<lang>/Tempora
     return f"Adv{sunday_of_advent}-{day_of_week_after_advent}"
 
@@ -113,12 +116,14 @@ def get_tempora_for_epiphany(now: datetime.datetime) -> Optional[str]:
 def get_tempora_for_pentecost(now: datetime.datetime) -> Optional[str]:
     empty_tomb = easter.easter(now.year, easter.EASTER_WESTERN)
     first_sunday_of_pentecost = empty_tomb + relativedelta(days=49)
+    advent = get_absolute_date_first_sunday_of_advent(now.year)
 
-    if now.date() < first_sunday_of_pentecost:
+    if now.date() < first_sunday_of_pentecost or now.date() >= advent:
         return None
 
     days_after_first_sunday = (now.date() - first_sunday_of_pentecost).days
     sundays_after_pentecost = days_after_first_sunday // 7
+
     # keep one slot for Sunday XXIV
     sundays_before_advent = get_amount_sundays_between_pent23_advent(now.year) - 1
     sunday_after_epiphany = sundays_after_pentecost - (

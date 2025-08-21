@@ -191,6 +191,15 @@ def test_tempora_pent_sunday_24_feria_2():
     assert expected == result
 
 
+def test_tempora_pent_sunday_after_advent_should_return_none():
+    expected = None
+    now = datetime(2025, 12, 25)
+
+    result = get_tempora_for_pentecost(now)
+
+    assert expected == result
+
+
 def test_tempora_pent_sunday_24_2024():
     expected = "Pent24-0"
     now = datetime(2024, 11, 24)
