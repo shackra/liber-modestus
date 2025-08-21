@@ -71,7 +71,7 @@ def get_tempora_for_advent(now: datetime.datetime) -> Optional[str]:
 
     first_sunday = get_absolute_date_first_sunday_of_advent(now.year)
 
-    if now < first_sunday:
+    if now.date() < first_sunday:
         return None
 
     delta: datetime.timedelta = now.date() - first_sunday
