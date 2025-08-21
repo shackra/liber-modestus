@@ -90,7 +90,9 @@ def get_tempora_for_advent(now: datetime.datetime) -> Optional[str]:
 
 def get_tempora_for_epiphany(now: datetime.datetime) -> Optional[str]:
     epiphany = datetime.datetime(now.year, 1, 6)
-    if now.date() < epiphany.date():
+    septuagesima = get_absolute_date_septuagesima_sunday(now.year)
+
+    if now.date() < epiphany.date() or now.date() >= septuagesima:
         return None
 
     # if today is the Epiphany of the Lord
@@ -101,13 +103,6 @@ def get_tempora_for_epiphany(now: datetime.datetime) -> Optional[str]:
     days_until_first_sunday = 7 - epiphany.isoweekday()
     first_sunday_after_epiphany = epiphany + relativedelta(days=days_until_first_sunday)
     days_after_first_sunday = (now - first_sunday_after_epiphany).days
-
-    # Beyond the Fifth Sunday after Epiphany
-    if days_after_first_sunday > (5 * 7):
-        return None
-
-    if now.date() == first_sunday_after_epiphany.date():
-        return "Epi1-0"
 
     sunday_n_after_epiphany = (days_after_first_sunday // 7) + 1
 
