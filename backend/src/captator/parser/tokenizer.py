@@ -51,6 +51,8 @@ class Tokenizer:
                     if i + 1 < len(raw_tokens) and raw_tokens[i + 1][0] == "SEMICOLON":
                         self.tokens.append(("SEP", ";;"))
                         i += 1
+                    elif bang:
+                        self.tokens.append(("SEP", ";"))
                     else:
                         self.tokens.append(raw_tokens[i])
 
@@ -60,9 +62,11 @@ class Tokenizer:
                     header = False
                     self.tokens.append(("HEADER", f"[{" ".join(header_text)}]"))
                     header_text = []
-                case "BANG":
+                    newline = False
+                case "BANG" | "EQUAL":
                     bang = True
                     self.tokens.append(raw_tokens[i])
+                    newline = False
                 case "NEWLINE":
                     bang = False
                 case _:
