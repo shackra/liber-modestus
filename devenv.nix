@@ -9,6 +9,7 @@
 {
   # https://devenv.sh/basics/
   env.GREET = "devenv";
+  env.TEST_ONLY_DO_FILES_PATH = "${config.devenv.root}/backend/src/divinum-officium/web/www/missa";
 
   # https://devenv.sh/packages/
   packages = [
