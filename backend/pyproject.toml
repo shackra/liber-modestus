@@ -11,6 +11,7 @@ dependencies = [
 [dependency-groups]
 dev = [
     "pytest>=8.4.1",
+    "pytest-timeout>=2.4.0",
 ]
 
 [tool.black]
@@ -24,6 +25,7 @@ line_length = 88
 pythonpath = [
   "src"
 ]
+timeout = 5
 
 [tool.ty.environment]
 extra-paths = ["./src"]
