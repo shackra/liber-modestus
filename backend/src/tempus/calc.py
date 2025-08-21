@@ -49,6 +49,16 @@ def get_absolute_date_first_sunday_of_advent(year: int) -> datetime.date:
     return first_sunday.date()
 
 
+def get_absolute_date_for_holy_name_of_jesus(year: int) -> datetime.date:
+    start = datetime.date(year, 1, 2)
+    days_until_next_sunday = 7 - start.isoweekday()
+    next_sunday_date = start + relativedelta(days=days_until_next_sunday)
+    if start.isoweekday() == 7 or next_sunday_date > datetime.date(year, 1, 5):
+        return start
+
+    return next_sunday_date
+
+
 def get_amount_sundays_after_epiphany(year: int) -> int:
     epiphany = datetime.date(year, 1, 6)
     septuagesima_sunday = get_absolute_date_septuagesima_sunday(year)

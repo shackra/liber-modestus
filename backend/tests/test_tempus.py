@@ -1,6 +1,7 @@
 from datetime import datetime
 
 from tempus import (
+    get_absolute_date_for_holy_name_of_jesus,
     get_tempora_for_advent,
     get_tempora_for_epiphany,
     get_tempora_for_lent,
@@ -72,6 +73,22 @@ def test_tempora_adv_2022_forth_sunday_saturday():
     result = get_tempora_for_advent(now)
 
     assert expected == result
+
+
+def test_tempora_holy_name_of_jesus_2022():
+    expected = datetime(2022, 1, 2)
+
+    result = get_absolute_date_for_holy_name_of_jesus(2022)
+
+    assert expected.date() == result
+
+
+def test_tempora_holy_name_of_jesus_2025():
+    expected = datetime(2025, 1, 5)
+
+    result = get_absolute_date_for_holy_name_of_jesus(2025)
+
+    assert expected.date() == result
 
 
 def test_tempora_epi_before_day():
