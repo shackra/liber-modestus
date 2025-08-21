@@ -191,6 +191,60 @@ def test_tempora_pent_sunday_24_feria_2():
     assert expected == result
 
 
+def test_tempora_pent_sunday_24_2024():
+    expected = "Pent24-0"
+    now = datetime(2024, 11, 24)
+
+    result = get_tempora_for_pentecost(now)
+
+    assert expected == result
+
+
+def test_tempora_pent_sunday_iv_epi_2024():
+    expected = "Epi4-0"
+    now = datetime(2024, 11, 3)
+
+    result = get_tempora_for_pentecost(now)
+
+    assert expected == result
+
+
+def test_tempora_pent_sunday_v_epi_2024():
+    expected = "Epi5-0"
+    now = datetime(2024, 11, 10)
+
+    result = get_tempora_for_pentecost(now)
+
+    assert expected == result
+
+
+def test_tempora_pent_sunday_vi_epi_2024():
+    expected = "Epi6-0"
+    now = datetime(2024, 11, 17)
+
+    result = get_tempora_for_pentecost(now)
+
+    assert expected == result
+
+
+def test_tempora_pent_sunday_v_epi_2026():
+    expected = "Epi5-0"
+    now = datetime(2026, 11, 8)
+
+    result = get_tempora_for_pentecost(now)
+
+    assert expected == result
+
+
+def test_tempora_pent_sunday_vi_epi_2026():
+    expected = "Epi6-0"
+    now = datetime(2026, 11, 15)
+
+    result = get_tempora_for_pentecost(now)
+
+    assert expected == result
+
+
 def test_tempora_pasc():
     expected = "Pasc0-0"
     now = datetime(2025, 4, 20)

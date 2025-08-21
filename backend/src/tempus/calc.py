@@ -1,3 +1,4 @@
+import calendar
 import datetime
 import pdb
 from typing import Optional
@@ -118,6 +119,21 @@ def get_tempora_for_pentecost(now: datetime.datetime) -> Optional[str]:
 
     days_after_first_sunday = (now.date() - first_sunday_of_pentecost).days
     sundays_after_pentecost = days_after_first_sunday // 7
+    # keep one slot for Sunday XXIV
+    sundays_before_advent = get_amount_sundays_between_pent23_advent(now.year) - 1
+    sunday_after_epiphany = sundays_after_pentecost - (
+        20 if calendar.isleap(now.year) else 19
+    )
+    if (
+        now.isoweekday() == 7
+        and sundays_before_advent >= 1
+        and sundays_after_pentecost > 23
+        and sunday_after_epiphany <= 6
+    ):
+        return f"Epi{sunday_after_epiphany}-0"
+
+    if sundays_after_pentecost > 24:
+        sundays_after_pentecost = 24
 
     return f"Pent{sundays_after_pentecost:02}-{now.isoweekday() if now.isoweekday() != 7 else 0}"
 
