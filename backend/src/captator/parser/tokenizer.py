@@ -45,6 +45,7 @@ class Tokenizer:
         header = False
         header_text = []
         bang = False
+        newline = True
         while i < len(raw_tokens):
             match raw_tokens[i][0]:
                 case "SEMICOLON":
@@ -55,9 +56,10 @@ class Tokenizer:
                         self.tokens.append(("SEP", ";"))
                     else:
                         self.tokens.append(raw_tokens[i])
-
+                    newline = False
                 case "LBRACK":
                     header = True
+                    newline = False
                 case "RBRACK":
                     header = False
                     self.tokens.append(("HEADER", f"[{" ".join(header_text)}]"))
@@ -69,11 +71,16 @@ class Tokenizer:
                     newline = False
                 case "NEWLINE":
                     bang = False
+                    if newline is False:
+                        newline = True
+                        self.tokens.append(raw_tokens[i])
                 case _:
                     if header:
                         header_text.append(raw_tokens[i][1])
                     else:
                         self.tokens.append(raw_tokens[i])
+
+                    newline = False
             i += 1
 
     def __iter__(self):
