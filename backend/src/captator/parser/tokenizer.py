@@ -8,6 +8,9 @@ class Tokenizer:
     def __init__(self, text: str):
         self.text = text
         self.tokens: List[Token] = []
+        if self.text == "":
+            raise ValueError("text cannot be empty")
+
         self._tokenize()
 
     def _tokenize(self):
