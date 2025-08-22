@@ -37,12 +37,12 @@ def get_absolute_date_first_sunday_of_advent(year: int) -> datetime.date:
         raise ValueError(f"{year} cannot be before 1583 or after 4099")
 
     christmas = datetime.datetime(year, 12, 25)
-    x_weeks_before_christmas: relativedelta = christmas - relativedelta(
+    x_weeks_before_christmas: datetime.datetime = christmas - relativedelta(
         weeks=4 if christmas.isoweekday() == 7 else 3
     )
 
     days_since_sunday: int = (x_weeks_before_christmas.weekday() + 1) % 7
-    first_sunday: relativedelta = x_weeks_before_christmas - relativedelta(
+    first_sunday: datetime.datetime = x_weeks_before_christmas - relativedelta(
         days=days_since_sunday
     )
 

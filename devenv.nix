@@ -1,8 +1,6 @@
 {
   pkgs,
-  lib,
   config,
-  inputs,
   ...
 }:
 
@@ -83,6 +81,7 @@
   # https://devenv.sh/tests/
   enterTest = ''
     cd ${config.devenv.root}/backend
+    mypy .
     pytest --failed-first .
   '';
 
@@ -90,8 +89,15 @@
   git-hooks.hooks = {
     shellcheck.enable = true;
     black.enable = true;
-    #uv.enable = true; # NOTE(shackra): not available yet?
+    uv-check.enable = true;
+    uv-lock.enable = true;
     isort.enable = true;
+    mypy = {
+      enable = true;
+      settings = {
+        binPath = "${config.devenv.root}/.devenv/state/venv/bin/mypy";
+      };
+    };
     biome.enable = true;
     nil.enable = true;
     commitizen.enable = true;
