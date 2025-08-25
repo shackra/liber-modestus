@@ -13,12 +13,13 @@ class Tokenizer:
 
         self._tokenize()
 
-    def _tokenize(self):
-        token_specification = [
+    def _tokenize(self) -> None:
+        token_specification: List[Token] = [
             ("LPAREN", r"\("),
             ("RPAREN", r"\)"),
             ("LBRACK", r"\["),
             ("RBRACK", r"\]"),
+            ("SEP", r";{2,}"),
             ("SEMICOLON", r";"),
             ("COLON", r":"),
             ("DOLLAR", r"\$"),
@@ -30,6 +31,7 @@ class Tokenizer:
             ("NUMBER", r"\d+(\.\d+)?"),
             ("WORD", r"[^\s;\[\]()$!&=:/-]+"),
             ("SKIP", r"[ \t]+"),
+            ("END", r"\n{2,}"),
             ("NEWLINE", r"\n"),
         ]
         tok_regex = "|".join(
@@ -47,44 +49,21 @@ class Tokenizer:
 
         i = 0
         header = False
-        header_text = []
+        header_text: List[str] = []
         bang = False
-        newline = True
         while i < len(raw_tokens):
             match raw_tokens[i][0]:
-                case "SEMICOLON":
-                    if i + 1 < len(raw_tokens) and raw_tokens[i + 1][0] == "SEMICOLON":
-                        self.tokens.append(("SEP", ";;"))
-                        i += 1
-                    elif bang:
-                        self.tokens.append(("SEP", ";"))
-                    else:
-                        self.tokens.append(raw_tokens[i])
-                    newline = False
                 case "LBRACK":
                     header = True
-                    newline = False
                 case "RBRACK":
                     header = False
                     self.tokens.append(("HEADER", f"[{" ".join(header_text)}]"))
                     header_text = []
-                    newline = False
-                case "BANG" | "EQUAL":
-                    bang = True
-                    self.tokens.append(raw_tokens[i])
-                    newline = False
-                case "NEWLINE":
-                    bang = False
-                    if newline is False:
-                        newline = True
-                        self.tokens.append(raw_tokens[i])
                 case _:
                     if header:
                         header_text.append(raw_tokens[i][1])
                     else:
                         self.tokens.append(raw_tokens[i])
-
-                    newline = False
             i += 1
 
     def __iter__(self):
