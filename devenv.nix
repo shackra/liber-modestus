@@ -81,7 +81,6 @@
   # https://devenv.sh/tests/
   enterTest = ''
     cd ${config.devenv.root}/backend
-    mypy .
     pytest --failed-first .
   '';
 

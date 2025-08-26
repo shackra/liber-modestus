@@ -31,3 +31,6 @@ timeout = 5
 
 [tool.ty.environment]
 extra-paths = ["./src"]
+
+[tool.mypy]
+mypy_path = "./src"
