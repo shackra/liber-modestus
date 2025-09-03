@@ -5,7 +5,7 @@ description = "Backend for Liber Modestus: Yet Another 1962 Roman Catholic Missa
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
-    "lark>=1.2.2",
+    "lark[interegular]>=1.2.2",
     "python-dateutil>=2.9.0.post0",
 ]
 
