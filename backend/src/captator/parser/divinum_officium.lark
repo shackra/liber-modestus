@@ -1,0 +1,87 @@
+// Divinum Officium document grammar.
+// Uses a custom lexer that tokenizes at the line level.
+// Each terminal represents a classified line type.
+// Parser: LALR(1).
+
+start: preamble? section*
+
+// Preamble: lines before the first section header.
+// Can contain any line type (e.g., Ordo.txt starts with &Vidiaquam and # headings)
+preamble: preamble_line+
+preamble_line: CROSS_REF
+             | MACRO_REF
+             | SUBROUTINE_REF
+             | SCRIPTURE_REF
+             | HEADING_LINE
+             | SEPARATOR
+             | VERSICLE
+             | DIALOG_VERSICLE
+             | DIALOG_RESPONSE
+             | SHORT_RESPONSE_BR
+             | RESPONSE_LINE
+             | PRIEST_LINE
+             | MINISTER_LINE
+             | CONGREGATION_LINE
+             | DEACON_LINE
+             | RANK_VALUE
+             | RULE_DIRECTIVE
+             | CONDITIONAL_LINE
+             | WAIT_DIRECTIVE
+             | CHANT_REF_LINE
+             | GLORIA_REF
+             | TEXT_LINE
+
+section: section_header section_body
+section_body: body_line*
+
+section_header: SECTION_HEADER
+             | SECTION_HEADER_WITH_RUBRIC
+
+body_line: CROSS_REF
+         | MACRO_REF
+         | SUBROUTINE_REF
+         | SCRIPTURE_REF
+         | HEADING_LINE
+         | SEPARATOR
+         | VERSICLE
+         | DIALOG_VERSICLE
+         | DIALOG_RESPONSE
+         | SHORT_RESPONSE_BR
+         | RESPONSE_LINE
+         | PRIEST_LINE
+         | MINISTER_LINE
+         | CONGREGATION_LINE
+         | DEACON_LINE
+         | RANK_VALUE
+         | RULE_DIRECTIVE
+         | CONDITIONAL_LINE
+         | WAIT_DIRECTIVE
+         | CHANT_REF_LINE
+         | GLORIA_REF
+         | TEXT_LINE
+
+// All terminals are declared - they are produced by the custom lexer.
+%declare SECTION_HEADER
+%declare SECTION_HEADER_WITH_RUBRIC
+%declare CROSS_REF
+%declare MACRO_REF
+%declare SUBROUTINE_REF
+%declare SCRIPTURE_REF
+%declare HEADING_LINE
+%declare SEPARATOR
+%declare VERSICLE
+%declare DIALOG_VERSICLE
+%declare DIALOG_RESPONSE
+%declare SHORT_RESPONSE_BR
+%declare RESPONSE_LINE
+%declare PRIEST_LINE
+%declare MINISTER_LINE
+%declare CONGREGATION_LINE
+%declare DEACON_LINE
+%declare RANK_VALUE
+%declare RULE_DIRECTIVE
+%declare CONDITIONAL_LINE
+%declare WAIT_DIRECTIVE
+%declare CHANT_REF_LINE
+%declare GLORIA_REF
+%declare TEXT_LINE
