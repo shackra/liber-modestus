@@ -13,8 +13,10 @@ from captator.parser.ast_nodes import (
     CrossRef,
     GloriaRef,
     LineKind,
+    MacroRef,
     RankValue,
     ScriptureRef,
+    SubroutineRef,
     TextLine,
     Versicle,
 )
@@ -400,3 +402,182 @@ class TestRealFileResolution:
         assert len(rvs) == 1
         # 1960 version should NOT have "cum Octava"
         assert "Octava" not in rvs[0].rank_class
+
+
+# ---------------------------------------------------------------------------
+# Self-reference (@:Section) resolution tests
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.skipif(not _HAS_DATA, reason="DO submodule not available")
+class TestSelfRefResolution:
+    """Test resolution of self-references (@:SectionName)."""
+
+    def test_cathedra_petri_self_refs(self):
+        """Cathedra S. Petri (02-22) uses @:Oratio Petri and @:Oratio Pauli."""
+        doc = parse_file(_MISSA_LATIN / "Sancti" / "02-22.txt")
+        config = MissalConfig(rubric=Rubric.RUBRICAE_1960)
+        resolved = resolve(doc, config, _MISSA_LATIN)
+        oratio = next(s for s in resolved.sections if s.header.name == "Oratio")
+        # Self-refs should be resolved — no CrossRef nodes remain
+        has_crossref = any(isinstance(l, CrossRef) for l in oratio.body)
+        assert not has_crossref
+        # The actual prayer text should be present
+        has_text = any(isinstance(l, TextLine) for l in oratio.body)
+        assert has_text
+
+    def test_self_ref_with_substitution_1960(self):
+        """S. John of Cross (11-24) with 1960: keeps 'Doctorem' title."""
+        doc = parse_file(_MISSA_LATIN / "Sancti" / "11-24.txt")
+        config = MissalConfig(rubric=Rubric.RUBRICAE_1960)
+        resolved = resolve(doc, config, _MISSA_LATIN)
+        oratio = next(s for s in resolved.sections if s.header.name == "Oratio")
+        text = " ".join(l.raw for l in oratio.body)
+        assert "Doctorem" in text
+
+    def test_self_ref_with_substitution_tridentine(self):
+        """S. John of Cross (11-24) with Tridentine: strips 'Doctorem'."""
+        doc = parse_file(_MISSA_LATIN / "Sancti" / "11-24.txt")
+        config = MissalConfig(rubric=Rubric.TRIDENT_1570)
+        resolved = resolve(doc, config, _MISSA_LATIN)
+        oratio = next(s for s in resolved.sections if s.header.name == "Oratio")
+        text = " ".join(l.raw for l in oratio.body)
+        assert "Doctorem" not in text
+
+
+# ---------------------------------------------------------------------------
+# $ macro expansion tests
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.skipif(not _HAS_DATA, reason="DO submodule not available")
+class TestMacroExpansion:
+    """Test expansion of $ macros from Prayers.txt."""
+
+    def test_per_dominum_expanded(self):
+        """$Per Dominum is replaced by the prayer conclusion text."""
+        doc = parse_file(_MISSA_LATIN / "Sancti" / "01-06.txt")
+        config = MissalConfig(rubric=Rubric.RUBRICAE_1960)
+        resolved = resolve(doc, config, _MISSA_LATIN)
+        postcom = next(s for s in resolved.sections if s.header.name == "Postcommunio")
+        # Should not have any MacroRef nodes
+        has_macro = any(isinstance(l, MacroRef) for l in postcom.body)
+        assert not has_macro
+        # Should have the expanded text with "Per Dóminum"
+        text = " ".join(l.raw for l in postcom.body)
+        assert "Per Dóminum nostrum" in text
+
+    def test_qui_tecum_expanded(self):
+        """$Qui tecum is replaced by the correct conclusion."""
+        doc = parse_file(_MISSA_LATIN / "Sancti" / "01-06.txt")
+        config = MissalConfig(rubric=Rubric.RUBRICAE_1960)
+        resolved = resolve(doc, config, _MISSA_LATIN)
+        secreta = next(s for s in resolved.sections if s.header.name == "Secreta")
+        text = " ".join(l.raw for l in secreta.body)
+        assert "Qui tecum vivit" in text
+
+    def test_per_eumdem_expanded(self):
+        """$Per eumdem is replaced by the correct conclusion."""
+        doc = parse_file(_MISSA_LATIN / "Sancti" / "01-06.txt")
+        config = MissalConfig(rubric=Rubric.RUBRICAE_1960)
+        resolved = resolve(doc, config, _MISSA_LATIN)
+        oratio = next(s for s in resolved.sections if s.header.name == "Oratio")
+        text = " ".join(l.raw for l in oratio.body)
+        assert "Per eúndem Dóminum" in text
+
+    def test_per_dominum_with_trailing_period(self):
+        """$Per Dominum. (with period) also resolves correctly."""
+        doc = parse_file(_MISSA_LATIN / "Tempora" / "Pent01-0a.txt")
+        config = MissalConfig(rubric=Rubric.RUBRICAE_1960)
+        resolved = resolve(doc, config, _MISSA_LATIN)
+        oratio = next(s for s in resolved.sections if s.header.name == "Oratio")
+        has_macro = any(isinstance(l, MacroRef) for l in oratio.body)
+        assert not has_macro
+
+
+# ---------------------------------------------------------------------------
+# & subroutine expansion tests
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.skipif(not _HAS_DATA, reason="DO submodule not available")
+class TestSubroutineExpansion:
+    """Test expansion of static & subroutines."""
+
+    def test_gloria_expanded_in_introitus(self):
+        """&Gloria in Introitus is replaced by Gloria Patri text."""
+        doc = parse_file(_MISSA_LATIN / "Sancti" / "01-06.txt")
+        config = MissalConfig(rubric=Rubric.RUBRICAE_1960)
+        resolved = resolve(doc, config, _MISSA_LATIN)
+        introitus = next(s for s in resolved.sections if s.header.name == "Introitus")
+        # No GloriaRef nodes should remain
+        has_gloria_ref = any(isinstance(l, GloriaRef) for l in introitus.body)
+        assert not has_gloria_ref
+        # Gloria Patri text should be present
+        text = " ".join(l.raw for l in introitus.body)
+        assert "Glória Patri" in text
+
+    def test_dynamic_subroutines_kept(self):
+        """Dynamic &introitus, &collect etc. in Ordo are kept as-is."""
+        doc = parse_file(_MISSA_LATIN / "Ordo" / "Propers.txt")
+        config = MissalConfig(rubric=Rubric.RUBRICAE_1960)
+        resolved = resolve(doc, config, _MISSA_LATIN)
+        # Dynamic subroutines should still be present as SubroutineRef nodes
+        has_dynamic = any(isinstance(l, SubroutineRef) for l in resolved.preamble)
+        assert has_dynamic
+
+
+# ---------------------------------------------------------------------------
+# Language layering tests
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.skipif(not _HAS_DATA, reason="DO submodule not available")
+class TestLanguageLayering:
+    """Test that macros expand in the configured language."""
+
+    def test_per_dominum_latin(self):
+        """Latin config expands $Per Dominum in Latin."""
+        doc = parse_file(_MISSA_LATIN / "Sancti" / "01-06.txt")
+        config = MissalConfig(rubric=Rubric.RUBRICAE_1960, language="Latin")
+        resolved = resolve(doc, config, _MISSA_LATIN)
+        postcom = next(s for s in resolved.sections if s.header.name == "Postcommunio")
+        text = " ".join(l.raw for l in postcom.body)
+        assert "Per Dóminum nostrum Jesum Christum" in text
+
+    def test_per_dominum_english(self):
+        """English config expands $Per Dominum in English."""
+        doc = parse_file(_MISSA_LATIN / "Sancti" / "01-06.txt")
+        config = MissalConfig(rubric=Rubric.RUBRICAE_1960, language="English")
+        resolved = resolve(doc, config, _MISSA_LATIN)
+        postcom = next(s for s in resolved.sections if s.header.name == "Postcommunio")
+        text = " ".join(l.raw for l in postcom.body)
+        assert "Through Jesus Christ" in text
+
+    def test_per_dominum_espanol(self):
+        """Espanol config expands $Per Dominum in Spanish."""
+        doc = parse_file(_MISSA_LATIN / "Sancti" / "01-06.txt")
+        config = MissalConfig(rubric=Rubric.RUBRICAE_1960, language="Espanol")
+        resolved = resolve(doc, config, _MISSA_LATIN)
+        postcom = next(s for s in resolved.sections if s.header.name == "Postcommunio")
+        text = " ".join(l.raw for l in postcom.body)
+        assert "Por nuestro Se" in text  # "Por nuestro Señor"
+
+    def test_gloria_english(self):
+        """English config expands &Gloria in English."""
+        doc = parse_file(_MISSA_LATIN / "Sancti" / "01-06.txt")
+        config = MissalConfig(rubric=Rubric.RUBRICAE_1960, language="English")
+        resolved = resolve(doc, config, _MISSA_LATIN)
+        introitus = next(s for s in resolved.sections if s.header.name == "Introitus")
+        text = " ".join(l.raw for l in introitus.body)
+        assert "Glory be to the Father" in text
+
+    def test_unknown_language_falls_back_to_latin(self):
+        """An unknown language gracefully falls back to Latin."""
+        doc = parse_file(_MISSA_LATIN / "Sancti" / "01-06.txt")
+        config = MissalConfig(rubric=Rubric.RUBRICAE_1960, language="Klingon")
+        resolved = resolve(doc, config, _MISSA_LATIN)
+        postcom = next(s for s in resolved.sections if s.header.name == "Postcommunio")
+        text = " ".join(l.raw for l in postcom.body)
+        # Falls back to Latin
+        assert "Per Dóminum nostrum Jesum Christum" in text

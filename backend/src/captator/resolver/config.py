@@ -122,6 +122,12 @@ class MissalConfig:
     order: OrderVariant = OrderVariant.ROMAN
     """The religious order variant."""
 
+    language: str = "Latin"
+    """Language for prayer/macro expansion (e.g., 'Latin', 'English',
+    'Espanol', 'Francais'). The language name must match a directory
+    name under ``web/www/missa/``.  Latin is always the base layer;
+    the chosen language overrides section-by-section."""
+
     day_of_week: int = 1
     """Day of week, 1-indexed (1=Sunday, ..., 7=Saturday)."""
 

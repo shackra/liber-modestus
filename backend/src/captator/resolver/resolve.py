@@ -1,21 +1,27 @@
 """Main document resolver: evaluates conditions, resolves cross-references,
-and filters display markers to produce a clean Document for presentation.
+expands macros/subroutines, and filters display markers to produce a clean
+Document for presentation.
 
 Processing order (matches the Perl pipeline):
 
 1. Evaluate section-level rubric conditions on ``[Section] (condition)``
    headers — keep only the correct variant for each section name.
 2. Resolve preamble-level ``@`` includes (whole-file defaults).
-3. Resolve section-level ``@`` includes (iteratively, max 7 deep).
+3. Resolve section-level ``@`` includes (iteratively, max 7 deep),
+   including self-references (``@:SectionName``).
 4. Process inline conditionals (``(sed ...)``, ``(vero ...)``, etc.)
    with backward/forward scoping.
 5. Filter display markers (``!*S``, ``!*R``, ``!*D``, etc.) based on
    the Mass type.
+6. Expand ``$`` macros (prayer conclusions from Prayers.txt).
+7. Expand static ``&`` subroutines (``&Gloria``, ``&DominusVobiscum``,
+   HTML entities).
 """
 
 from __future__ import annotations
 
 import re
+from functools import lru_cache
 from pathlib import Path
 from typing import Optional
 
@@ -25,12 +31,15 @@ from captator.parser.ast_nodes import (
     ConditionalLine,
     CrossRef,
     Document,
+    GloriaRef,
     Line,
     LineKind,
+    MacroRef,
     RubricCondition,
     ScriptureRef,
     Section,
     SectionHeader,
+    SubroutineRef,
     TextLine,
 )
 
@@ -39,6 +48,68 @@ from .evaluator import vero
 
 # Maximum depth for iterative @-reference resolution within a section.
 _MAX_REF_DEPTH = 7
+
+# HTML entities that &Name maps to (used in Holy Saturday texts).
+_HTML_ENTITIES: dict[str, str] = {
+    "Psi": "\u03a8",  # Ψ
+    "Alpha": "\u0391",  # Α
+    "Omega": "\u03a9",  # Ω
+}
+
+
+# ---------------------------------------------------------------------------
+# Prayer/macro database loading
+# ---------------------------------------------------------------------------
+
+
+@lru_cache(maxsize=64)
+def _load_prayers_db(prayers_path: str) -> dict[str, list[Line]]:
+    """Load and cache a Prayers.txt file as a section-name -> lines dict.
+
+    Returns a mapping from prayer name (e.g., "Per Dominum") to the list
+    of body lines for that section.
+    """
+    path = Path(prayers_path)
+    if not path.is_file():
+        return {}
+
+    try:
+        doc = parse_file(str(path))
+    except Exception:
+        return {}
+
+    db: dict[str, list[Line]] = {}
+    for section in doc.sections:
+        db[section.header.name] = section.body
+    return db
+
+
+def _get_prayers_db(base: Path, language: str) -> dict[str, list[Line]]:
+    """Get the prayers database with language layering.
+
+    Latin is always the base layer.  If *language* is not ``"Latin"``,
+    the translated Prayers.txt is loaded and its sections override the
+    Latin ones.  Sections not present in the translation fall back to
+    Latin automatically.
+
+    The ``base`` path is expected to point at a specific language
+    directory (e.g., ``…/missa/Latin``).  We derive the missa root
+    from it to locate sibling language directories.
+    """
+    # Determine the missa root (parent of the language directory).
+    missa_root = base.parent
+
+    # 1. Always load Latin as the base layer.
+    latin_path = missa_root / "Latin" / "Ordo" / "Prayers.txt"
+    db = dict(_load_prayers_db(str(latin_path)))
+
+    # 2. Overlay the requested language on top (if different from Latin).
+    if language and language != "Latin":
+        lang_path = missa_root / language / "Ordo" / "Prayers.txt"
+        lang_db = _load_prayers_db(str(lang_path))
+        db.update(lang_db)
+
+    return db
 
 
 # ---------------------------------------------------------------------------
@@ -61,7 +132,7 @@ def resolve(
 
     Returns:
         A new ``Document`` with conditions evaluated, cross-references
-        resolved, and display markers filtered.
+        resolved, macros expanded, and display markers filtered.
     """
     base = Path(base_path)
 
@@ -73,11 +144,18 @@ def resolve(
         doc.preamble, sections, config, base
     )
 
-    # Phase 3: Resolve section-level @ includes (iterative).
-    sections = [_resolve_section_refs(s, config, base) for s in sections]
-
-    # Phase 4: Process inline conditionals within each section body.
+    # Phase 3: Process inline conditionals within each section body.
+    # This must happen BEFORE @-ref resolution so that conditional
+    # selection (e.g., choosing between @:Oratio_ and @:Oratio_:s/.../)
+    # is done first.
     sections = [_process_section_conditionals(s, config) for s in sections]
+
+    # Phase 4: Resolve section-level @ includes (iterative),
+    # including self-references (@:SectionName).
+    all_sections_map = {s.header.name: s for s in sections}
+    sections = [
+        _resolve_section_refs(s, config, base, all_sections_map) for s in sections
+    ]
 
     # Phase 5: Filter display markers based on Mass type.
     preamble = _filter_display_markers(preamble, config)
@@ -86,7 +164,22 @@ def resolve(
         for s in sections
     ]
 
-    # Phase 6: Remove empty sections.
+    # Phase 6: Expand $ macros (prayer conclusions).
+    prayers_db = _get_prayers_db(base, config.language)
+    preamble = _expand_macros(preamble, prayers_db)
+    sections = [
+        Section(header=s.header, body=_expand_macros(s.body, prayers_db))
+        for s in sections
+    ]
+
+    # Phase 7: Expand static & subroutines (&Gloria, &DominusVobiscum, entities).
+    preamble = _expand_subroutines(preamble, prayers_db)
+    sections = [
+        Section(header=s.header, body=_expand_subroutines(s.body, prayers_db))
+        for s in sections
+    ]
+
+    # Phase 8: Remove empty sections.
     sections = [s for s in sections if s.body]
 
     return Document(preamble=preamble, sections=sections)
@@ -112,32 +205,27 @@ def _select_section_variants(
     We keep the section as-is and let conditional processing handle it.
     """
     result: list[Section] = []
-    # Track which section names we've already resolved
     seen_names: dict[str, int] = {}
 
     for section in sections:
         name = section.header.name
 
         if section.header.rubric is not None:
-            # Conditional section: evaluate the condition
             condition_met = vero(section.header.rubric.expression, config)
 
             if name in seen_names:
-                # We already have a version of this section
                 if condition_met:
-                    # This conditional version wins — replace the existing one
                     result[seen_names[name]] = Section(
                         header=SectionHeader(
                             kind=LineKind.SECTION_HEADER,
                             raw=section.header.raw,
                             line_number=section.header.line_number,
                             name=name,
-                            rubric=None,  # Clear the condition (it was satisfied)
+                            rubric=None,
                         ),
                         body=section.body,
                     )
             else:
-                # First occurrence of this section name, and it's conditional
                 if condition_met:
                     idx = len(result)
                     seen_names[name] = idx
@@ -153,14 +241,8 @@ def _select_section_variants(
                             body=section.body,
                         )
                     )
-                # If not met, skip entirely (no default exists)
         else:
-            # Unconditional section
-            if name in seen_names:
-                # Duplicate unconditional section — shouldn't happen normally,
-                # but keep the first one
-                pass
-            else:
+            if name not in seen_names:
                 idx = len(result)
                 seen_names[name] = idx
                 result.append(section)
@@ -189,10 +271,8 @@ def _resolve_preamble_includes(
 
     for line in preamble:
         if isinstance(line, CrossRef) and line.file_ref:
-            # Load the referenced file
             ref_doc = _load_referenced_file(line.file_ref, None, base)
             if ref_doc:
-                # Add missing sections as defaults
                 for ref_section in ref_doc.sections:
                     if ref_section.header.name not in existing_names:
                         sections.append(ref_section)
@@ -204,7 +284,7 @@ def _resolve_preamble_includes(
 
 
 # ---------------------------------------------------------------------------
-# Phase 3: Section-level @ resolution
+# Phase 3: Section-level @ resolution (including self-references)
 # ---------------------------------------------------------------------------
 
 
@@ -212,8 +292,13 @@ def _resolve_section_refs(
     section: Section,
     config: MissalConfig,
     base: Path,
+    all_sections: dict[str, Section],
 ) -> Section:
-    """Resolve @-references within a section body (iteratively, max 7 deep)."""
+    """Resolve @-references within a section body (iteratively, max 7 deep).
+
+    Self-references (``@:SectionName``) are resolved by looking up the
+    named section in ``all_sections`` (the document's own sections).
+    """
     body = list(section.body)
 
     for _iteration in range(_MAX_REF_DEPTH):
@@ -224,7 +309,7 @@ def _resolve_section_refs(
             if isinstance(line, CrossRef):
                 had_refs = True
                 resolved_lines = _resolve_single_ref(
-                    line, section.header.name, config, base
+                    line, section.header.name, config, base, all_sections
                 )
                 new_body.extend(resolved_lines)
             else:
@@ -242,6 +327,7 @@ def _resolve_single_ref(
     current_section_name: str,
     config: MissalConfig,
     base: Path,
+    all_sections: dict[str, Section],
 ) -> list[Line]:
     """Resolve a single @-reference to its content lines.
 
@@ -250,24 +336,29 @@ def _resolve_single_ref(
     """
     target_section = ref.section_ref or current_section_name
 
+    # --- Self-reference: @:SectionName ---
     if ref.is_self_ref:
-        # Self-reference: we can't resolve without the full document context.
-        # For now, keep it as-is (a future pass could handle this).
+        if not ref.section_ref:
+            return [ref]
+
+        target_name = ref.section_ref
+        if target_name in all_sections:
+            lines = list(all_sections[target_name].body)
+            if ref.substitutions:
+                lines = _apply_substitutions(lines, ref.substitutions)
+            return lines
         return [ref]
 
+    # --- External file reference ---
     if not ref.file_ref:
         return [ref]
 
     ref_doc = _load_referenced_file(ref.file_ref, target_section, base)
     if ref_doc is None:
-        # File not found — keep the reference as-is
         return [ref]
 
-    # Find the target section
     target = ref_doc.get_section(target_section)
     if target is None:
-        # Section not found — if no specific section was requested,
-        # this might be a whole-file reference. Return preamble content.
         if ref.section_ref is None and ref_doc.preamble:
             lines = list(ref_doc.preamble)
         else:
@@ -275,7 +366,6 @@ def _resolve_single_ref(
     else:
         lines = list(target.body)
 
-    # Apply substitutions if present
     if ref.substitutions:
         lines = _apply_substitutions(lines, ref.substitutions)
 
@@ -291,18 +381,14 @@ def _load_referenced_file(
 
     Handles path construction: ``Tempora/Nat2-0`` -> ``base/Tempora/Nat2-0.txt``.
     """
-    # Normalize the file reference
     ref_path = file_ref.strip()
 
-    # Add .txt extension if not present
     if not ref_path.endswith(".txt"):
         ref_path += ".txt"
 
     full_path = base / ref_path
 
     if not full_path.is_file():
-        # Try without Commune/ prefix redirect (missa communes may
-        # reference horas commons — we stay within our base for now)
         return None
 
     try:
@@ -318,38 +404,35 @@ def _apply_substitutions(lines: list[Line], subs: str) -> list[Line]:
     - Line selection: ``3`` (line 3), ``1-4`` (lines 1-4),
       ``!3`` (all except line 3)
     - Regex: ``s/pattern/replacement/flags``
+
+    Backslash-escaped spaces in patterns (``\\ ``) are converted to
+    literal spaces before applying the regex.
     """
-    # Parse substitution operations
     remaining = subs.strip()
 
-    # Process each substitution operation
     for m in re.finditer(
         r"(?:s/(?P<s>[^/]*)/(?P<r>[^/]*)/(?P<f>[gism]*))"
         r"|(?:(?P<n>!?)(?P<b>\d+)(?:-(?P<e>\d+))?)",
         remaining,
     ):
         if m.group("b"):
-            # Line selection
-            start = int(m.group("b")) - 1  # 0-indexed
+            start = int(m.group("b")) - 1
             end = int(m.group("e")) if m.group("e") else start + 1
             negate = bool(m.group("n"))
 
             if negate:
-                # Keep everything EXCEPT the selected range
                 lines = lines[:start] + lines[end:]
             else:
-                # Keep ONLY the selected range
                 lines = lines[start:end]
         elif m.group("s") is not None:
-            # Regex substitution on the raw text of each line
-            pattern = m.group("s")
-            replacement = m.group("r")
+            pattern = m.group("s").replace("\\ ", " ")
+            replacement = m.group("r").replace("\\ ", " ")
             flags_str = m.group("f") or ""
 
             re_flags = 0
             count = 1
             if "g" in flags_str:
-                count = 0  # replace all
+                count = 0
             if "i" in flags_str:
                 re_flags |= re.IGNORECASE
             if "m" in flags_str:
@@ -359,11 +442,14 @@ def _apply_substitutions(lines: list[Line], subs: str) -> list[Line]:
 
             new_lines: list[Line] = []
             for line in lines:
-                new_raw = re.sub(
-                    pattern, replacement, line.raw, count=count, flags=re_flags
-                )
+                try:
+                    new_raw = re.sub(
+                        pattern, replacement, line.raw, count=count, flags=re_flags
+                    )
+                except re.error:
+                    new_lines.append(line)
+                    continue
                 if new_raw != line.raw:
-                    # Create a new TextLine with the modified content
                     new_lines.append(
                         TextLine(
                             kind=LineKind.TEXT,
@@ -383,7 +469,6 @@ def _apply_substitutions(lines: list[Line], subs: str) -> list[Line]:
 # Phase 4: Inline conditional processing
 # ---------------------------------------------------------------------------
 
-# Regex for inline conditionals: (stopwords condition scope_keywords)
 _RE_CONDITIONAL_CONTENT = re.compile(
     r"^\s*"
     r"(?:(?P<stopwords>(?:(?:sed|vero|atque|attamen|si|deinde)\s*)+))?"
@@ -394,10 +479,8 @@ _RE_CONDITIONAL_CONTENT = re.compile(
     re.IGNORECASE,
 )
 
-# Stopwords that have implicit backscope (can remove preceding lines)
 _BACKSCOPED_STOPWORDS = {"sed", "vero", "atque", "attamen"}
 
-# Stopword strength weights
 _STOPWORD_WEIGHTS = {
     "si": 0,
     "sed": 1,
@@ -409,12 +492,7 @@ _STOPWORD_WEIGHTS = {
 
 
 def _process_section_conditionals(section: Section, config: MissalConfig) -> Section:
-    """Process inline conditionals within a section body.
-
-    This implements the backward/forward scoping logic from the Perl
-    ``process_conditional_lines()`` function, simplified for the AST-based
-    approach.
-    """
+    """Process inline conditionals within a section body."""
     output: list[Line] = []
 
     i = 0
@@ -432,45 +510,28 @@ def _process_section_conditionals(section: Section, config: MissalConfig) -> Sec
 
             if condition_met:
                 if is_omission and has_backscope:
-                    # Remove preceding content (backward scope)
                     _backscope_remove(output, parsed["backscope_level"])
                     i += 1
                     continue
                 elif has_backscope and not is_omission:
-                    # Replace preceding content: remove it, then include
-                    # the following line(s)
                     _backscope_remove(output, parsed["backscope_level"])
-                    # The next lines are the replacement — they'll be added
-                    # normally in subsequent iterations
                     i += 1
                     continue
                 else:
-                    # Forward-only: following lines are included (default behavior)
                     i += 1
                     continue
             else:
                 if is_omission:
-                    # Condition not met for omission -> keep preceding content
                     i += 1
                     continue
                 elif has_backscope:
-                    # Condition not met: skip the conditional AND the
-                    # following replacement lines (forward scope)
                     i += 1
-                    # Skip lines until the next blank-ish line or another conditional
                     scope = parsed["forward_scope"]
                     if scope == "line":
-                        # Skip exactly one following line
                         if i < len(body) and not isinstance(body[i], ConditionalLine):
                             i += 1
-                    elif scope == "chunk":
-                        # Skip until next blank line (which we represent as
-                        # a break in the token stream — but our lexer skips blanks).
-                        # In practice, skip until next conditional or different pattern.
-                        pass
                     continue
                 else:
-                    # No backscope, condition not met: skip following content
                     i += 1
                     scope = parsed["forward_scope"]
                     if scope == "line":
@@ -507,7 +568,6 @@ def _parse_inline_conditional(condition_text: str) -> dict:
 
     result["condition"] = condition
 
-    # Parse stopwords
     stopwords = re.findall(
         r"\b(sed|vero|atque|attamen|si|deinde)\b", stopwords_str, re.IGNORECASE
     )
@@ -517,7 +577,6 @@ def _parse_inline_conditional(condition_text: str) -> dict:
     result["strength"] = strength
     result["has_backscope"] = has_backscope
 
-    # Parse scope keywords
     if "omittitur" in scope_kw or "omittuntur" in scope_kw:
         result["is_omission"] = True
         if "omittuntur" in scope_kw or "versuum" in scope_kw:
@@ -529,7 +588,6 @@ def _parse_inline_conditional(condition_text: str) -> dict:
     elif "versus" in scope_kw:
         result["backscope_level"] = "chunk"
 
-    # Forward scope
     if result["is_omission"]:
         result["forward_scope"] = "none"
     elif "dicuntur" in scope_kw:
@@ -548,18 +606,13 @@ def _backscope_remove(output: list[Line], level: str) -> None:
         return
 
     if level == "line":
-        # Remove just the last line
         output.pop()
     elif level == "chunk":
-        # Remove trailing non-blank lines (our lines are never truly blank
-        # since the lexer skips them, so we remove trailing non-conditional lines)
         while output and not isinstance(output[-1], ConditionalLine):
             output.pop()
             if not output:
                 break
     elif level == "nest":
-        # More aggressive: remove back to the last "fence" (conditional boundary).
-        # For simplicity, remove all trailing non-conditional lines.
         while output and not isinstance(output[-1], ConditionalLine):
             output.pop()
             if not output:
@@ -572,11 +625,7 @@ def _backscope_remove(output: list[Line], level: str) -> None:
 
 
 def _filter_display_markers(lines: list[Line], config: MissalConfig) -> list[Line]:
-    """Filter lines based on ``!*S``/``!*R``/``!*D``/``!*nD`` display markers.
-
-    Display markers affect all following lines until the next marker or
-    section break.
-    """
+    """Filter lines based on ``!*S``/``!*R``/``!*D``/``!*nD`` display markers."""
     output: list[Line] = []
     i = 0
 
@@ -589,29 +638,23 @@ def _filter_display_markers(lines: list[Line], config: MissalConfig) -> list[Lin
             and line.display_marker
         ):
             marker = line.display_marker
-
             skip = _should_skip_marker(marker, config)
 
             if skip:
-                # Skip this marker AND all following lines until we hit
-                # another display marker, a section break, or end of body
                 i += 1
                 while i < len(lines):
                     next_line = lines[i]
-                    # Stop at the next display marker
                     if (
                         isinstance(next_line, ScriptureRef)
                         and next_line.is_display_marker
                         and next_line.display_marker
                     ):
                         break
-                    # Stop at headings (structural breaks in Ordo)
                     if next_line.kind == LineKind.HEADING:
                         break
                     i += 1
                 continue
             else:
-                # Marker passes: skip the marker line itself but show content
                 i += 1
                 continue
         else:
@@ -625,24 +668,112 @@ def _should_skip_marker(marker: str, config: MissalConfig) -> bool:
     """Determine if a display marker's content should be skipped."""
     skip = False
 
-    # Check for function hooks: !*&funcname — skip for now (not evaluable)
     if marker.startswith("&"):
         return False
 
-    # !*nD — NOT Defunctorum: skip if this IS a Requiem
     if "nD" in marker and config.is_requiem:
         skip = True
 
-    # !*D — Defunctorum: skip if this is NOT a Requiem
     if "D" in marker and "nD" not in marker and not config.is_requiem:
         skip = True
 
-    # !*S — Solemn: skip if NOT solemn
     if "S" in marker and "Sn" not in marker and not config.is_solemn:
         skip = True
 
-    # !*R — Read: skip if solemn
     if "R" in marker and config.is_solemn:
         skip = True
 
     return skip
+
+
+# ---------------------------------------------------------------------------
+# Phase 6: $ macro expansion
+# ---------------------------------------------------------------------------
+
+
+def _expand_macros(lines: list[Line], prayers_db: dict[str, list[Line]]) -> list[Line]:
+    """Expand ``$MacroName`` lines by looking up the Prayers.txt database.
+
+    The macro name is matched against section names in Prayers.txt.
+    A trailing period is stripped for lookup (``$Per Dominum.`` ->
+    ``Per Dominum``).
+    """
+    output: list[Line] = []
+
+    for line in lines:
+        if isinstance(line, MacroRef):
+            macro_name = line.macro_name.strip().rstrip(".")
+
+            if macro_name in prayers_db:
+                output.extend(prayers_db[macro_name])
+            else:
+                # Macro not found — keep as-is
+                output.append(line)
+        else:
+            output.append(line)
+
+    return output
+
+
+# ---------------------------------------------------------------------------
+# Phase 7: & subroutine expansion (static cases only)
+# ---------------------------------------------------------------------------
+
+# Subroutine names that map to a Prayers.txt section.
+_SUBROUTINE_PRAYER_MAP: dict[str, str] = {
+    "DominusVobiscum": "Dominus vobiscum",
+    "Dominus_vobiscum": "Dominus vobiscum",
+    "Benedicamus_Domino": "Benedicamus Domino",
+    "pater_noster": "Pater noster",
+}
+
+
+def _expand_subroutines(
+    lines: list[Line], prayers_db: dict[str, list[Line]]
+) -> list[Line]:
+    """Expand static ``&`` subroutine references.
+
+    Handles:
+    - ``&Gloria`` / ``&Glória``: replaced by the Gloria Patri from Prayers.txt.
+    - ``&DominusVobiscum``, ``&Dominus_vobiscum``, ``&Benedicamus_Domino``,
+      ``&pater_noster``: replaced by their Prayers.txt sections.
+    - ``&Alpha``, ``&Omega``, ``&Psi``: replaced by Unicode characters.
+    - Other ``&`` calls (dynamic Perl functions like ``&introitus``,
+      ``&collect``, etc.): kept as-is.
+    """
+    output: list[Line] = []
+
+    for line in lines:
+        if isinstance(line, GloriaRef):
+            # &Gloria -> Gloria Patri from Prayers.txt
+            if "Gloria" in prayers_db:
+                output.extend(prayers_db["Gloria"])
+            else:
+                output.append(line)
+        elif isinstance(line, SubroutineRef):
+            name = line.function_name
+
+            # Check HTML entities
+            if name in _HTML_ENTITIES:
+                output.append(
+                    TextLine(
+                        kind=LineKind.TEXT,
+                        raw=_HTML_ENTITIES[name],
+                        line_number=line.line_number,
+                        body=_HTML_ENTITIES[name],
+                    )
+                )
+            # Check prayer-mapped subroutines
+            elif name in _SUBROUTINE_PRAYER_MAP:
+                prayer_name = _SUBROUTINE_PRAYER_MAP[name]
+                if prayer_name in prayers_db:
+                    output.extend(prayers_db[prayer_name])
+                else:
+                    output.append(line)
+            else:
+                # Dynamic subroutine — keep as-is
+                output.append(line)
+        else:
+            output.append(line)
+
+    return output
