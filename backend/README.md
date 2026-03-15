@@ -32,7 +32,8 @@ The backend is organised into three modules that form a pipeline:
 | [`captator.parser`](src/captator/parser/README.md) | Parse `.txt` files into a typed AST | Line-level lexer, LALR(1) grammar, 22 node types |
 | [`captator.resolver`](src/captator/resolver/README.md) | Evaluate conditions, resolve cross-references, expand macros | 8-phase pipeline, rubric conditions, language layering |
 | [`captator.directorium`](src/captator/directorium/README.md) | Liturgical calendar engine | Temporal cycle, sanctoral Kalendar, occurrence, transfers |
-| `captator.options` | Frontend-facing option sets | Rubrics, Mass types, languages, votives, communes |
+| `captator.options` | Frontend-facing option sets | Rubrics, Mass types, languages, votives, communes, Ordo variants |
+| `captator.assembly` | Combine Ordo (canon) + Propers into complete Mass | Template substitution, preface/communicantes selection |
 
 ## Prerequisites
 
@@ -99,6 +100,48 @@ for section in doc.sections:
         print(f"  {line.raw}")
 ```
 
+### Assemble a complete Mass (Ordo + Propers)
+
+```python
+from datetime import date
+from captator.directorium import get_mass_day
+from captator.assembly import assemble_mass
+from captator.resolver import MissalConfig, Rubric, MassType
+
+config = MissalConfig(rubric=Rubric.RUBRICAE_1960, mass_type=MassType.READ)
+day = get_mass_day(
+    date(2025, 1, 6), config,
+    tabulae_path="path/to/Tabulae",
+    missa_path="path/to/missa/Latin",
+)
+
+# Assemble: Ordo template + day's propers + correct preface + communicantes
+complete = assemble_mass(
+    propers=day.resolved_document,
+    config=config,
+    missa_path="path/to/missa/Latin",
+    ordo="Ordo",  # or "OrdoOP" (Dominican), "OrdoS" (Sarum), etc.
+)
+
+# The result is a Document with the entire Mass from Prayers at the
+# Foot of the Altar through the Last Gospel:
+for line in complete.preamble:
+    print(line.raw)
+```
+
+The assembly layer handles:
+- Inserting the day's Introitus, Collect, Epistle, Gradual, Gospel,
+  Offertory, Secret, Communion antiphon, and Postcommunion at the
+  correct positions in the Ordo template.
+- Selecting the proper **Preface** from `Prefationes.txt` based on the
+  `Prefatio=` rule in the propers or the liturgical season.
+- Selecting the correct **Communicantes** variant in the Canon (with
+  St. Joseph for 1962, seasonal variants for Christmas/Easter/etc.).
+- Inserting the special **Hanc igitur** during Easter and Pentecost
+  octaves.
+- Supporting 6 different Ordo (canon/rite) variants: Roman, Dominican,
+  Sarum, Ambrosian, Mozarabic, and 1965-1967 transitional.
+
 ### Parse a single file without calendar logic
 
 ```python
@@ -157,7 +200,8 @@ for o in opts.votives:
 # C9: Defunctorum quotidianis: Requiem aeternam
 # ...
 
-# Available fields: rubrics, mass_types, orders, languages, votives, communes
+# Available fields: rubrics, mass_types, orders, languages, votives, communes, ordines
+# ordines = Ordo/canon variants (Roman, Dominican, Sarum, etc.)
 ```
 
 To check which languages are actually present on disk:
