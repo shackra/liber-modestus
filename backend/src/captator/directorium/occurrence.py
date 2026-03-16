@@ -35,7 +35,15 @@ class OccurrenceResult:
     """Numerical rank of the winning office."""
 
     winner_name: str = ""
-    """Display name of the winning feast."""
+    """Display name of the winning feast in the configured language.
+    Populated by the directorium after occurrence resolution using
+    the ``feast_names.yaml`` database.  Falls back to the canonical
+    Latin name if no translation is available."""
+
+    winner_name_canonical: str = ""
+    """Canonical Latin name of the winning feast (from the Kalendar
+    or the ``[Rank]`` section).  Always Latin regardless of the
+    configured language."""
 
     is_sanctoral: bool = False
     """True if the sanctoral office won over the temporal."""

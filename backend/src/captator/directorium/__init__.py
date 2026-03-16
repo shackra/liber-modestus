@@ -311,18 +311,46 @@ class MassDay:
     occurrence: OccurrenceResult
     """The occurrence resolution result."""
 
-    display_name: str = ""
-    """Feast/day name in the configured language (from the translated
-    file's ``[Rank]`` section).  Falls back to the Latin name from the
-    Kalendar if no translation exists."""
-
     resolved_document: Optional[Document] = None
     """The fully resolved Document AST, if loading succeeded."""
 
 
 # ---------------------------------------------------------------------------
-# Display name extraction (fast, no full parse)
+# Display name resolution (YAML database + fast file fallback)
 # ---------------------------------------------------------------------------
+
+_FEAST_NAMES_PATH = Path(__file__).parent.parent.parent.parent / "feast_names.yaml"
+
+
+@lru_cache(maxsize=1)
+def _load_feast_names_db() -> dict[str, dict[str, str]]:
+    """Load the feast names YAML database (cached).
+
+    Returns a mapping of ``latin_name -> {language: translated_name}``.
+    Only entries with a non-empty translation are included.
+    """
+    if not _FEAST_NAMES_PATH.is_file():
+        return {}
+    try:
+        import yaml
+
+        raw = yaml.safe_load(_FEAST_NAMES_PATH.read_text(encoding="utf-8"))
+        if not isinstance(raw, dict):
+            return {}
+        # Filter out empty translations
+        db: dict[str, dict[str, str]] = {}
+        for latin_name, translations in raw.items():
+            if isinstance(translations, dict):
+                filtered = {
+                    lang: name
+                    for lang, name in translations.items()
+                    if name  # skip None / empty
+                }
+                if filtered:
+                    db[latin_name] = filtered
+        return db
+    except Exception:
+        return {}
 
 
 def _extract_rank_display_name(filepath: Path) -> str:
@@ -361,29 +389,40 @@ def _get_display_name(
 ) -> str:
     """Get the feast display name in the requested language.
 
-    Tries the translated file first, then falls back to the Latin file,
-    then to the ``winner_name`` from the Kalendar (always Latin).
+    Lookup order:
+    1. The ``feast_names.yaml`` database (fastest, user-curated).
+    2. The translated file's ``[Rank]`` section (fast file scan).
+    3. The Latin file's ``[Rank]`` section.
+    4. The ``winner_name`` from the Kalendar (always Latin).
     """
     if not winner_file:
         return winner_name
 
-    # missa points to the Latin directory; derive the parent for language lookup
-    missa_root = missa.parent
+    # Determine the Latin canonical name first (needed for YAML lookup)
+    latin_path = missa / f"{winner_file}.txt"
+    latin_name = _extract_rank_display_name(latin_path) or winner_name
 
-    # Try the requested language first
+    # 1. Try the YAML database
     if language and language != "Latin":
+        db = _load_feast_names_db()
+        # Try both the Latin [Rank] name and the Kalendar name
+        for key in (latin_name, winner_name):
+            if key in db and language in db[key]:
+                return db[key][language]
+
+    # 2. Try the translated file's [Rank] section
+    if language and language != "Latin":
+        missa_root = missa.parent
         lang_path = missa_root / language / f"{winner_file}.txt"
         name = _extract_rank_display_name(lang_path)
         if name:
             return name
 
-    # Try Latin
-    latin_path = missa / f"{winner_file}.txt"
-    name = _extract_rank_display_name(latin_path)
-    if name:
-        return name
+    # 3. Use the Latin [Rank] name
+    if latin_name:
+        return latin_name
 
-    # Fallback to the Kalendar name
+    # 4. Fallback to the Kalendar name
     return winner_name
 
 
@@ -493,10 +532,14 @@ def get_mass_day(
             except Exception:
                 pass
 
-    # Resolve the display name in the configured language
-    display_name = _get_display_name(
-        occ.winner_file, occ.winner_name, config.language, missa
-    )
+    # Resolve the display name in the configured language.
+    # The occurrence result has the canonical Latin name from the Kalendar
+    # in winner_name.  We copy that to winner_name_canonical and then
+    # overwrite winner_name with the translated name.
+    canonical = occ.winner_name
+    translated = _get_display_name(occ.winner_file, canonical, config.language, missa)
+    occ.winner_name_canonical = canonical
+    occ.winner_name = translated
 
     return MassDay(
         date=dt,
@@ -504,7 +547,6 @@ def get_mass_day(
         tempora_file=tempora_file,
         sanctoral_date=sday,
         occurrence=occ,
-        display_name=display_name,
         resolved_document=resolved_doc,
     )
 
