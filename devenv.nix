@@ -7,7 +7,7 @@
 {
   # https://devenv.sh/basics/
   env.GREET = "devenv";
-  env.TEST_ONLY_DO_FILES_PATH = "${config.devenv.root}/backend/src/divinum-officium/web/www/missa";
+  env.TEST_ONLY_DO_FILES_PATH = "${config.devenv.root}/backend/src/sacrum/divinum-officium/web/www/missa";
 
   # https://devenv.sh/packages/
   packages = [
@@ -55,9 +55,9 @@
 
   scripts.format.exec = ''
     echo "isort"
-    ${pkgs.isort}/bin/isort --sg 'src/divinum-officium/**/*.py' --om ${config.devenv.root}/backend
+    ${pkgs.isort}/bin/isort --sg 'src/sacrum/divinum-officium/**/*.py' --om ${config.devenv.root}/backend
     echo "black"
-    ${pkgs.black}/bin/black --exclude 'src/divinum-officium/.*/.*\.py' ${config.devenv.root}/backend
+    ${pkgs.black}/bin/black --exclude 'src/sacrum/divinum-officium/.*/.*\.py' ${config.devenv.root}/backend
   '';
 
   scripts.check.exec = ''

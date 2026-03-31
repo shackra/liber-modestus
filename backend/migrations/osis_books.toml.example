@@ -1,0 +1,83 @@
+# Example: OSIS book ID → canonical Book enum mapping
+#
+# Copy this file to osis_books.toml and adjust the values to match your
+# OSIS source.  The keys are the OSIS book identifiers as they appear in
+# the <verse osisID="..."> elements of your XML file (e.g. "John" or "Ps").
+# The values are the canonical Book enum values (1-73).
+#
+# Protestant canon (1-66)
+[books]
+"Gen" = 1       # Genesis
+"Exod" = 2      # Exodus
+"Lev" = 3       # Leviticus
+"Num" = 4       # Numbers
+"Deut" = 5      # Deuteronomy
+"Josh" = 6      # Joshua
+"Judg" = 7      # Judges
+"Ruth" = 8      # Ruth
+"1Sam" = 9      # 1 Samuel
+"2Sam" = 10     # 2 Samuel
+"1Kgs" = 11      # 1 Kings
+"2Kgs" = 12     # 2 Kings
+"1Chr" = 13     # 1 Chronicles
+"2Chr" = 14     # 2 Chronicles
+"Ezra" = 15     # Ezra
+"Neh" = 16      # Nehemiah
+"Esth" = 17     # Esther
+"Job" = 18      # Job
+"Ps" = 19       # Psalms
+"Prov" = 20     # Proverbs
+"Eccl" = 21     # Ecclesiastes
+"Song" = 22     # Song of Songs
+"Isa" = 23      # Isaiah
+"Jer" = 24      # Jeremiah
+"Lam" = 25      # Lamentations
+"Ezek" = 26     # Ezekiel
+"Dan" = 27      # Daniel
+"Hos" = 28      # Hosea
+"Joel" = 29     # Joel
+"Amos" = 30     # Amos
+"Obad" = 31     # Obadiah
+"Jonah" = 32    # Jonah
+"Mic" = 33      # Micah
+"Nah" = 34      # Nahum
+"Hab" = 35      # Habakkuk
+"Zeph" = 36     # Zephaniah
+"Hag" = 37      # Haggai
+"Zech" = 38     # Zechariah
+"Mal" = 39      # Malachi
+"Matt" = 40     # Matthew
+"Mark" = 41      # Mark
+"Luke" = 42     # Luke
+"John" = 43     # John
+"Acts" = 44     # Acts
+"Rom" = 45      # Romans
+"1Cor" = 46     # 1 Corinthians
+"2Cor" = 47     # 2 Corinthians
+"Gal" = 48      # Galatians
+"Eph" = 49      # Ephesians
+"Phil" = 50     # Philippians
+"Col" = 51      # Colossians
+"1Thess" = 52   # 1 Thessalonians
+"2Thess" = 53  # 2 Thessalonians
+"1Tim" = 54     # 1 Timothy
+"2Tim" = 55     # 2 Timothy
+"Titus" = 56    # Titus
+"Phlm" = 57     # Philemon
+"Heb" = 58      # Hebrews
+"Jas" = 59      # James
+"1Pet" = 60     # 1 Peter
+"2Pet" = 61     # 2 Peter
+"1John" = 62   # 1 John
+"2John" = 63    # 2 John
+"3John" = 64   # 3 John
+"Jude" = 65     # Jude
+"Rev" = 66      # Revelation
+# Deuterocanonical (67-73)
+"Tob" = 67      # Tobit
+"Jdt" = 68      # Judith
+"Wis" = 69      # Wisdom
+"Sir" = 70      # Sirach / Ecclesiasticus
+"Bar" = 71      # Baruch
+"1Macc" = 72   # 1 Maccabees
+"2Macc" = 73   # 2 Maccabees
