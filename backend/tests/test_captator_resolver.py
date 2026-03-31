@@ -8,8 +8,8 @@ from pathlib import Path
 
 import pytest
 
-from captator.parser import parse, parse_file
-from captator.parser.ast_nodes import (
+from sacrum.captator.parser import parse, parse_file
+from sacrum.captator.parser.ast_nodes import (
     CrossRef,
     GloriaRef,
     LineKind,
@@ -20,7 +20,7 @@ from captator.parser.ast_nodes import (
     TextLine,
     Versicle,
 )
-from captator.resolver import (
+from sacrum.captator.resolver import (
     MassType,
     MissalConfig,
     OrderVariant,
@@ -33,7 +33,9 @@ from captator.resolver import (
 # Test data paths
 # ---------------------------------------------------------------------------
 
-_DO_BASE = Path(__file__).parent.parent / "src" / "divinum-officium" / "web" / "www"
+_DO_BASE = (
+    Path(__file__).parent.parent / "src" / "sacrum" / "divinum-officium" / "web" / "www"
+)
 _MISSA_LATIN = _DO_BASE / "missa" / "Latin"
 _HAS_DATA = _MISSA_LATIN.is_dir() and any(_MISSA_LATIN.glob("Sancti/*.txt"))
 

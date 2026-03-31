@@ -7,8 +7,8 @@ and occurrence precedence rules.
 Usage::
 
     from datetime import date
-    from captator.resolver import MissalConfig, Rubric
-    from captator.directorium import get_mass_propers, MassDay
+    from sacrum.captator.resolver import MissalConfig, Rubric
+    from sacrum.captator.directorium import get_mass_propers, MassDay
 
     config = MissalConfig(rubric=Rubric.RUBRICAE_1960)
     day = get_mass_propers(date(2025, 12, 25), config,
@@ -29,9 +29,9 @@ from typing import Optional
 
 from dateutil.easter import EASTER_WESTERN, easter
 
-from captator.parser import Document, parse_file
-from captator.resolver import MissalConfig, Rubric, resolve
-from captator.resolver.config import OrderVariant
+from sacrum.captator.parser import Document, parse_file
+from sacrum.captator.resolver import MissalConfig, Rubric, resolve
+from sacrum.captator.resolver.config import OrderVariant
 
 from .occurrence import OccurrenceResult, resolve_occurrence
 from .tables import (

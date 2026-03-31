@@ -1,7 +1,7 @@
 import datetime
 import os
 
-import captator
+import sacrum.captator as captator
 
 
 def test_get_date_to_liturgical_calendar():

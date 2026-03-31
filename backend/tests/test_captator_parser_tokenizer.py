@@ -4,7 +4,7 @@ The Tokenizer classifies each non-blank line of a DO .txt file into a
 typed token. These tests verify correct line-level classification.
 """
 
-from captator import parser
+from sacrum.captator import parser
 
 # ---------------------------------------------------------------------------
 # Basic tokenization: verify line counts and token types

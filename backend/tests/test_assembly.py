@@ -5,12 +5,14 @@ from pathlib import Path
 
 import pytest
 
-from captator.assembly import assemble_mass
-from captator.directorium import get_mass_day
-from captator.parser.ast_nodes import SubroutineRef, TextLine
-from captator.resolver import MassType, MissalConfig, Rubric
+from sacrum.captator.assembly import assemble_mass
+from sacrum.captator.directorium import get_mass_day
+from sacrum.captator.parser.ast_nodes import SubroutineRef, TextLine
+from sacrum.captator.resolver import MassType, MissalConfig, Rubric
 
-_DO_BASE = Path(__file__).parent.parent / "src" / "divinum-officium" / "web" / "www"
+_DO_BASE = (
+    Path(__file__).parent.parent / "src" / "sacrum" / "divinum-officium" / "web" / "www"
+)
 _TABULAE = _DO_BASE / "Tabulae"
 _MISSA = _DO_BASE / "missa" / "Latin"
 _HAS_DATA = _TABULAE.is_dir() and _MISSA.is_dir()

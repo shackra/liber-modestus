@@ -25,9 +25,9 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Optional
 
-from captator.parser import parse as parse_text
-from captator.parser import parse_file
-from captator.parser.ast_nodes import (
+from sacrum.captator.parser import parse as parse_text
+from sacrum.captator.parser import parse_file
+from sacrum.captator.parser.ast_nodes import (
     ConditionalLine,
     CrossRef,
     Document,

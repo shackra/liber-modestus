@@ -30,8 +30,8 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Optional
 
-from captator.parser import parse_file
-from captator.parser.ast_nodes import (
+from sacrum.captator.parser import parse_file
+from sacrum.captator.parser.ast_nodes import (
     Document,
     GloriaRef,
     Line,
@@ -43,8 +43,8 @@ from captator.parser.ast_nodes import (
     SubroutineRef,
     TextLine,
 )
-from captator.resolver import MissalConfig, resolve
-from captator.resolver.config import Rubric
+from sacrum.captator.resolver import MissalConfig, resolve
+from sacrum.captator.resolver.config import Rubric
 
 # ---------------------------------------------------------------------------
 # Proper section mapping: &subroutine -> [SectionName]

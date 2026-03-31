@@ -4,16 +4,22 @@ from pathlib import Path
 
 import pytest
 
-from captator.options import (
+from sacrum.captator.options import (
     MassOptions,
     Option,
     get_languages_from_disk,
     get_mass_options,
 )
-from captator.resolver.config import MassType, OrderVariant, Rubric
+from sacrum.captator.resolver.config import MassType, OrderVariant, Rubric
 
 _MISSA = (
-    Path(__file__).parent.parent / "src" / "divinum-officium" / "web" / "www" / "missa"
+    Path(__file__).parent.parent
+    / "src"
+    / "sacrum"
+    / "divinum-officium"
+    / "web"
+    / "www"
+    / "missa"
 )
 _HAS_DATA = _MISSA.is_dir()
 

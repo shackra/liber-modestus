@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from tempus import (
+from sacrum.tempus import (
     get_absolute_date_for_holy_name_of_jesus,
     get_tempora_for_advent,
     get_tempora_for_epiphany,

@@ -98,7 +98,7 @@ def get_tempora_for_advent(now: datetime.datetime) -> Optional[str]:
     if now >= datetime.datetime(now.year, 12, 24):
         return None
 
-    # `Adv` matches what's on src/divinum-officium/web/www/missa/<lang>/Tempora
+    # `Adv` matches what's on src/sacrum/divinum-officium/web/www/missa/<lang>/Tempora
     return f"Adv{sunday_of_advent}-{day_of_week_after_advent}"
 
 

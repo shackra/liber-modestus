@@ -21,7 +21,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Optional
 
-from captator.resolver.config import MassType, MissalConfig, OrderVariant, Rubric
+from sacrum.captator.resolver.config import MassType, MissalConfig, OrderVariant, Rubric
 
 # ---------------------------------------------------------------------------
 # Option item type

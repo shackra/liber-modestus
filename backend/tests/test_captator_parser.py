@@ -8,7 +8,7 @@ from pathlib import Path
 
 import pytest
 
-from captator.parser import (
+from sacrum.captator.parser import (
     CrossRef,
     Document,
     GloriaRef,
@@ -28,7 +28,7 @@ from captator.parser import (
     parse,
     parse_file,
 )
-from captator.parser.ast_nodes import (
+from sacrum.captator.parser.ast_nodes import (
     ConditionalLine,
     DialogResponse,
     DialogVersicle,
@@ -41,7 +41,9 @@ from captator.parser.ast_nodes import (
 # Path to test data
 # ---------------------------------------------------------------------------
 
-_DO_BASE = Path(__file__).parent.parent / "src" / "divinum-officium" / "web" / "www"
+_DO_BASE = (
+    Path(__file__).parent.parent / "src" / "sacrum" / "divinum-officium" / "web" / "www"
+)
 _MISSA_LATIN = _DO_BASE / "missa" / "Latin"
 
 # Check if test data is available (submodule may not be cloned)

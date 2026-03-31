@@ -5,15 +5,17 @@ from pathlib import Path
 
 import pytest
 
-from captator.directorium import MassDay, get_mass_day
-from captator.directorium.tables import (
+from sacrum.captator.directorium import MassDay, get_mass_day
+from sacrum.captator.directorium.tables import (
     load_data_config,
     load_kalendar_merged,
     load_tempora_merged,
 )
-from captator.resolver import MissalConfig, Rubric
+from sacrum.captator.resolver import MissalConfig, Rubric
 
-_DO_BASE = Path(__file__).parent.parent / "src" / "divinum-officium" / "web" / "www"
+_DO_BASE = (
+    Path(__file__).parent.parent / "src" / "sacrum" / "divinum-officium" / "web" / "www"
+)
 _TABULAE = _DO_BASE / "Tabulae"
 _MISSA = _DO_BASE / "missa" / "Latin"
 _HAS_DATA = _TABULAE.is_dir() and (_TABULAE / "data.txt").is_file()
