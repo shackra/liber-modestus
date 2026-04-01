@@ -1,11 +1,12 @@
-"""Restful API functionality"""
+import strawberry
+from fastapi import FastAPI
+from strawberry.fastapi import GraphQLRouter
 
-import datetime
+from .schema import Query
 
-from sacrum.captator.resolver.config import MassType, Rubric
+schema = strawberry.Schema(query=Query)
 
+app = FastAPI()
 
-def get_proprium(
-    rubric: Rubric, mass_type: MassType, language: str, date: datetime.date
-):
-    pass
+graphql_router = GraphQLRouter(schema, path="/graphql")
+app.include_router(graphql_router)

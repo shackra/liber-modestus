@@ -10,6 +10,8 @@ dependencies = [
     "lark[interegular]>=1.2.2",
     "python-dateutil>=2.9.0.post0",
     "pyyaml>=6.0.3",
+    "strawberry-graphql[cli,fastapi]>=0.312.2",
+    "uvicorn[standard]>=0.42.0",
 ]
 
 [dependency-groups]
