@@ -3,7 +3,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Dict, List, Optional
 
-import sacrum.tempus as tempus
+from .. import tempus
 
 _DO_Commune = "Commune"
 _DO_Ordo = "Ordo"

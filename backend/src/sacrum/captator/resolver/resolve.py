@@ -25,9 +25,9 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Optional
 
-from sacrum.captator.parser import parse as parse_text
-from sacrum.captator.parser import parse_file
-from sacrum.captator.parser.ast_nodes import (
+from ..parser import parse as parse_text
+from ..parser import parse_file
+from ..parser.ast_nodes import (
     ConditionalLine,
     CrossRef,
     Document,
@@ -42,7 +42,6 @@ from sacrum.captator.parser.ast_nodes import (
     SubroutineRef,
     TextLine,
 )
-
 from .config import MassType, MissalConfig
 from .evaluator import vero
 
