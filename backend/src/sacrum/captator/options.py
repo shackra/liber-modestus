@@ -17,11 +17,10 @@ Usage::
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from pathlib import Path
-from typing import Optional
 
-from .resolver.config import MassType, MissalConfig, OrderVariant, Rubric
+from .resolver.config import MassType, OrderVariant, Rubric
 
 # ---------------------------------------------------------------------------
 # Option item type
