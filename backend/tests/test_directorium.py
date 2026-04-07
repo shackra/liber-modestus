@@ -5,7 +5,14 @@ from pathlib import Path
 
 import pytest
 
-from sacrum.captator.directorium import MassDay, get_mass_day
+from sacrum.captator.directorium import (
+    LiturgicalColor,
+    MassDay,
+    MassInfo,
+    get_mass_day,
+    get_mass_info_for_date,
+    get_mass_info_for_month,
+)
 from sacrum.captator.directorium.tables import (
     load_data_config,
     load_kalendar_merged,
@@ -304,3 +311,162 @@ class TestChristTheKing:
         # 2026: Oct 25 is the last Sunday
         day_2026 = _day(2026, 10, 25)
         assert "10-DU" in day_2026.occurrence.winner_file
+
+
+# ---------------------------------------------------------------------------
+# get_mass_info_for_date
+# ---------------------------------------------------------------------------
+
+
+def _info(
+    y: int,
+    m: int,
+    d: int,
+    rubric: Rubric = Rubric.RUBRICAE_1960,
+    language: str = "Latin",
+) -> MassInfo:
+    return get_mass_info_for_date(date(y, m, d), rubric, language)
+
+
+@pytest.mark.skipif(not _HAS_DATA, reason="DO submodule not available")
+class TestMassInfoBasic:
+    """Basic tests for get_mass_info_for_date return type and fields."""
+
+    def test_returns_mass_info(self):
+        info = _info(2025, 12, 25)
+        assert isinstance(info, MassInfo)
+
+    def test_has_all_fields(self):
+        info = _info(2025, 12, 25)
+        assert info.date == date(2025, 12, 25)
+        assert isinstance(info.name, str) and info.name
+        assert isinstance(info.name_canonical, str) and info.name_canonical
+        assert isinstance(info.rank, float)
+        assert isinstance(info.rank_name, str)
+        assert isinstance(info.color, LiturgicalColor)
+        assert isinstance(info.is_sanctoral, bool)
+        assert isinstance(info.commemorations, list)
+
+    def test_canonical_name_is_latin(self):
+        """name_canonical should always be in Latin regardless of language."""
+        info = _info(2025, 6, 29, language="English")
+        # The canonical name should NOT be in English
+        assert "Apostol" in info.name_canonical  # Latin word
+        assert info.name != info.name_canonical  # Translated name differs
+
+
+@pytest.mark.skipif(not _HAS_DATA, reason="DO submodule not available")
+class TestMassInfoColor:
+    """Test liturgical colour assignment."""
+
+    def test_christmas_is_white(self):
+        info = _info(2025, 12, 25)
+        assert info.color == LiturgicalColor.WHITE
+
+    def test_advent_sunday_is_violet(self):
+        info = _info(2025, 11, 30)
+        assert info.color == LiturgicalColor.VIOLET
+
+    def test_gaudete_sunday_is_rose(self):
+        """Third Sunday of Advent (Gaudete) uses rose vestments."""
+        # 2025: Advent III = Dec 14
+        info = _info(2025, 12, 14)
+        assert info.color == LiturgicalColor.ROSE
+
+    def test_laetare_sunday_is_rose(self):
+        """Fourth Sunday of Lent (Laetare) uses rose vestments."""
+        # 2025: Easter = Apr 20, Laetare = Mar 30
+        info = _info(2025, 3, 30)
+        assert info.color == LiturgicalColor.ROSE
+
+    def test_ss_peter_paul_is_red(self):
+        """Apostles feast = red vestments."""
+        info = _info(2025, 6, 29)
+        assert info.color == LiturgicalColor.RED
+
+    def test_all_souls_is_black(self):
+        """All Souls (Nov 2, when not Sunday) = black vestments."""
+        # 2024: Nov 2 is Saturday
+        info = _info(2024, 11, 2)
+        assert info.color == LiturgicalColor.BLACK
+
+    def test_good_friday_is_black(self):
+        """Good Friday = black vestments."""
+        # 2025: Good Friday = Apr 18
+        info = _info(2025, 4, 18)
+        assert info.color == LiturgicalColor.BLACK
+
+    def test_easter_is_white(self):
+        info = _info(2025, 4, 20)
+        assert info.color == LiturgicalColor.WHITE
+
+    def test_st_joseph_is_white(self):
+        """Confessor feast = white vestments."""
+        info = _info(2025, 3, 19)
+        assert info.color == LiturgicalColor.WHITE
+
+    def test_ordinary_time_feria_is_green(self):
+        """An ordinary-time feria should be green."""
+        # Wed Jul 9, 2025: a Pentecost-season feria
+        info = _info(2025, 7, 9)
+        assert info.color == LiturgicalColor.GREEN
+
+    def test_lent_feria_is_violet(self):
+        """A Lent feria should be violet."""
+        # 2025: Mar 11 = Tuesday of first week of Lent (no saint)
+        info = _info(2025, 3, 11)
+        assert info.color == LiturgicalColor.VIOLET
+
+
+@pytest.mark.skipif(not _HAS_DATA, reason="DO submodule not available")
+class TestMassInfoRankName:
+    """Test rank-class extraction from [Rank] section."""
+
+    def test_christmas_duplex_i_classis(self):
+        info = _info(2025, 12, 25)
+        assert "Duplex" in info.rank_name
+        assert "I" in info.rank_name
+
+    def test_advent_i_semiduplex(self):
+        info = _info(2025, 11, 30)
+        assert "Semiduplex" in info.rank_name or "classis" in info.rank_name
+
+    def test_rank_name_not_empty_for_major_feasts(self):
+        """Major feasts should always have a rank name."""
+        for dt_tuple in [(2025, 12, 25), (2025, 4, 20), (2025, 6, 29)]:
+            info = _info(*dt_tuple)
+            assert info.rank_name, f"Empty rank_name for {dt_tuple}"
+
+
+@pytest.mark.skipif(not _HAS_DATA, reason="DO submodule not available")
+class TestMassInfoBulk:
+    """Test bulk helpers (month/year)."""
+
+    def test_info_for_month_december(self):
+        infos = get_mass_info_for_month(2025, 12)
+        assert len(infos) == 31
+        assert all(isinstance(i, MassInfo) for i in infos)
+        # Christmas should be in there
+        christmas = infos[24]  # index 24 = Dec 25
+        assert christmas.date == date(2025, 12, 25)
+        assert christmas.color == LiturgicalColor.WHITE
+
+    def test_info_for_month_february_leap(self):
+        """February in a leap year should have 29 entries."""
+        infos = get_mass_info_for_month(2024, 2)
+        assert len(infos) == 29
+
+
+@pytest.mark.skipif(not _HAS_DATA, reason="DO submodule not available")
+class TestMassInfoConditionalRank:
+    """Test that rank extraction respects rubrical conditions."""
+
+    def test_ss_peter_paul_1960_no_octave(self):
+        """Ss. Peter & Paul in 1960 should NOT have 'cum octava'."""
+        info = _info(2025, 6, 29, Rubric.RUBRICAE_1960)
+        assert "octava" not in info.rank_name.lower()
+
+    def test_ss_peter_paul_tridentine_has_octave(self):
+        """Ss. Peter & Paul pre-1960 should have 'cum octava'."""
+        info = _info(2025, 6, 29, Rubric.TRIDENT_1570)
+        assert "octava" in info.rank_name.lower()

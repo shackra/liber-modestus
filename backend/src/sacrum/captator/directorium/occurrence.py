@@ -82,6 +82,18 @@ def _estimate_transfer_rank(file_ref: str) -> float:
     return 5.0
 
 
+def _qualify_file_ref(file_ref: str) -> str:
+    """Prefix a file reference with ``Sancti/`` if it is not already qualified.
+
+    Transfer entries may contain full paths like ``Tempora/Nat1-0`` that
+    must NOT receive an extra ``Sancti/`` prefix.  Plain ``MM-DD`` refs
+    (e.g., ``03-19``) are assumed to be Sancti files.
+    """
+    if "/" in file_ref:
+        return file_ref
+    return f"Sancti/{file_ref}"
+
+
 def _is_defunctorum(feast_name: str) -> bool:
     """Check if a feast name indicates a Defunctorum / Requiem Mass."""
     lower = feast_name.lower()

@@ -228,6 +228,19 @@ wheels = [
 ]
 
 [[package]]
+name = "icalendar"
+version = "7.0.3"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "python-dateutil" },
+    { name = "tzdata" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/b8/60/6b0356a2ed1c9689ae14bd8e44f22eac67c420a0ecca4df8306b70906600/icalendar-7.0.3.tar.gz", hash = "sha256:95027ece087ab87184d765f03761f25875821f74cdd18d3b57e9c868216d8fde", size = 443788, upload-time = "2026-03-03T12:00:10.952Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/fa/c6/431fbf9063a6a4306d4cedae7823d69baf0979ba6ca57ab24a9d898cd0aa/icalendar-7.0.3-py3-none-any.whl", hash = "sha256:8c9fea6d3a89671bba8b6938d8565b4d0ec465c6a2796ef0f92790dcb9e627cd", size = 442406, upload-time = "2026-03-03T12:00:09.228Z" },
+]
+
+[[package]]
 name = "idna"
 version = "3.11"
 source = { registry = "https://pypi.org/simple" }
@@ -331,6 +344,7 @@ source = { virtual = "." }
 dependencies = [
     { name = "astral" },
     { name = "fastapi", extra = ["standard-no-fastapi-cloud-cli"] },
+    { name = "icalendar" },
     { name = "lark", extra = ["interegular"] },
     { name = "python-dateutil" },
     { name = "pyyaml" },
@@ -351,6 +365,7 @@ dev = [
 requires-dist = [
     { name = "astral", specifier = ">=3.2" },
     { name = "fastapi", extras = ["standard-no-fastapi-cloud-cli"], specifier = ">=0.135.1" },
+    { name = "icalendar", specifier = ">=7.0.3" },
     { name = "lark", extras = ["interegular"], specifier = ">=1.2.2" },
     { name = "python-dateutil", specifier = ">=2.9.0.post0" },
     { name = "pyyaml", specifier = ">=6.0.3" },
