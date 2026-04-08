@@ -48,16 +48,16 @@ Two additional packages provide independent functionality:
 
 ### Modules
 
-| Module | Purpose | Details |
-|--------|---------|---------|
-| [`sacrum.captator.directorium`](src/sacrum/captator/directorium/README.md) | Liturgical calendar engine | Temporal cycle, sanctoral Kalendar, occurrence resolution, feast transfers, liturgical colour |
-| [`sacrum.captator.parser`](src/sacrum/captator/parser/README.md) | Parse `.txt` files into a typed AST | Line-level lexer, LALR(1) grammar, 22 node types |
-| [`sacrum.captator.resolver`](src/sacrum/captator/resolver/README.md) | Evaluate conditions, resolve cross-references, expand macros | 8-phase pipeline, rubric conditions, language layering |
-| `sacrum.captator.assembly` | Combine Ordo (canon) + Propers into complete Mass | Template substitution, preface/communicantes selection |
-| `sacrum.captator.options` | Frontend-facing option sets | Rubrics, Mass types, languages, votives, communes, Ordo variants |
-| `sacrum.tempus` | Temporal cycle date calculations | Easter-relative dates, season boundaries, Tempora IDs |
-| `horae` | Canonical hours calculator | Temporal (unequal) hours from sunrise/sunset at a geographic location |
-| `scriptura` | Scripture reference parser | Bible citation parsing, 73-book canon, verse IDs, 17 locales |
+| Module                                                                     | Purpose                                                      | Details                                                                                       |
+|----------------------------------------------------------------------------|--------------------------------------------------------------|-----------------------------------------------------------------------------------------------|
+| [`sacrum.captator.directorium`](src/sacrum/captator/directorium/README.md) | Liturgical calendar engine                                   | Temporal cycle, sanctoral Kalendar, occurrence resolution, feast transfers, liturgical colour |
+| [`sacrum.captator.parser`](src/sacrum/captator/parser/README.md)           | Parse `.txt` files into a typed AST                          | Line-level lexer, LALR(1) grammar, 22 node types                                              |
+| [`sacrum.captator.resolver`](src/sacrum/captator/resolver/README.md)       | Evaluate conditions, resolve cross-references, expand macros | 8-phase pipeline, rubric conditions, language layering                                        |
+| `sacrum.captator.assembly`                                                 | Combine Ordo (canon) + Propers into complete Mass            | Template substitution, preface/communicantes selection                                        |
+| `sacrum.captator.options`                                                  | Frontend-facing option sets                                  | Rubrics, Mass types, languages, votives, communes, Ordo variants                              |
+| `sacrum.tempus`                                                            | Temporal cycle date calculations                             | Easter-relative dates, season boundaries, Tempora IDs                                         |
+| `horae`                                                                    | Canonical hours calculator                                   | Temporal (unequal) hours from sunrise/sunset at a geographic location                         |
+| `scriptura`                                                                | Scripture reference parser                                   | Bible citation parsing, 73-book canon, verse IDs, 17 locales                                  |
 
 ### Data flow
 
@@ -451,81 +451,81 @@ lookup_book("1Cor")      # Book.AD_CORINTHIOS_1
 
 ### Calendar generation
 
-| Function | Returns | Description |
-|----------|---------|-------------|
-| `directorium.get_mass_info_for_date(dt, rubric?, language?)` | `MassInfo` | Name, canonical name, rank, rank class, colour, commemorations for a date |
-| `directorium.get_mass_info_for_month(year, month, ...)` | `list[MassInfo]` | `MassInfo` for every day of a month |
-| `directorium.get_mass_info_for_year(year, ...)` | `list[MassInfo]` | `MassInfo` for every day of a year |
-| `directorium.get_mass_name_for_date(dt, rubric?, language?)` | `MassName` | Lighter: name + rank + commemorations (no colour/rank class) |
-| `directorium.get_mass_names_for_month(year, month, ...)` | `list[MassName]` | `MassName` for every day of a month |
-| `directorium.get_mass_names_for_year(year, ...)` | `list[MassName]` | `MassName` for every day of a year |
+| Function                                                     | Returns          | Description                                                               |
+|--------------------------------------------------------------|------------------|---------------------------------------------------------------------------|
+| `directorium.get_mass_info_for_date(dt, rubric?, language?)` | `MassInfo`       | Name, canonical name, rank, rank class, colour, commemorations for a date |
+| `directorium.get_mass_info_for_month(year, month, ...)`      | `list[MassInfo]` | `MassInfo` for every day of a month                                       |
+| `directorium.get_mass_info_for_year(year, ...)`              | `list[MassInfo]` | `MassInfo` for every day of a year                                        |
+| `directorium.get_mass_name_for_date(dt, rubric?, language?)` | `MassName`       | Lighter: name + rank + commemorations (no colour/rank class)              |
+| `directorium.get_mass_names_for_month(year, month, ...)`     | `list[MassName]` | `MassName` for every day of a month                                       |
+| `directorium.get_mass_names_for_year(year, ...)`             | `list[MassName]` | `MassName` for every day of a year                                        |
 
 ### Mass propers and assembly
 
-| Function | Returns | Description |
-|----------|---------|-------------|
-| `directorium.get_mass_day(dt, config, tabulae_path, missa_path)` | `MassDay` | Full occurrence resolution + resolved document AST |
-| `assembly.assemble_mass(propers, config, missa_path, ordo?)` | `Document` | Combine Ordo template with resolved propers into a complete Mass |
+| Function                                                         | Returns    | Description                                                      |
+|------------------------------------------------------------------|------------|------------------------------------------------------------------|
+| `directorium.get_mass_day(dt, config, tabulae_path, missa_path)` | `MassDay`  | Full occurrence resolution + resolved document AST               |
+| `assembly.assemble_mass(propers, config, missa_path, ordo?)`     | `Document` | Combine Ordo template with resolved propers into a complete Mass |
 
 ### Parsing and resolution
 
-| Function | Returns | Description |
-|----------|---------|-------------|
-| `parser.parse(text)` | `Document` | Parse a raw text string into a Document AST |
-| `parser.parse_file(path)` | `Document` | Parse a `.txt` file into a Document AST |
+| Function                                   | Returns    | Description                                                     |
+|--------------------------------------------|------------|-----------------------------------------------------------------|
+| `parser.parse(text)`                       | `Document` | Parse a raw text string into a Document AST                     |
+| `parser.parse_file(path)`                  | `Document` | Parse a `.txt` file into a Document AST                         |
 | `resolver.resolve(doc, config, base_path)` | `Document` | 8-phase resolution: conditions, @-refs, $-macros, &-subroutines |
-| `resolver.vero(condition, config)` | `bool` | Evaluate a Latin rubric condition (e.g., `"rubrica 1960"`) |
+| `resolver.vero(condition, config)`         | `bool`     | Evaluate a Latin rubric condition (e.g., `"rubrica 1960"`)      |
 
 ### Canonical hours
 
-| Function | Returns | Description |
-|----------|---------|-------------|
+| Function                                                            | Returns       | Description                                   |
+|---------------------------------------------------------------------|---------------|-----------------------------------------------|
 | `horae.get_horae(date, lat, lng, tz, include_prime?, matins_mode?)` | `HoraeResult` | All 8 canonical hours for a date and location |
 
 ### Scripture
 
-| Function | Returns | Description |
-|----------|---------|-------------|
-| `scriptura.parse_citation(raw)` | `NormalizedReference \| None` | Parse a Vulgate citation string into a structured reference |
-| `scriptura.lookup_book(abbr)` | `Book \| None` | Look up a `Book` enum by abbreviation, name, or OSIS ID |
-| `scriptura.book_name(book, locale?)` | `str` | Localised book name (17 locales) |
+| Function                             | Returns                       | Description                                                 |
+|--------------------------------------|-------------------------------|-------------------------------------------------------------|
+| `scriptura.parse_citation(raw)`      | `NormalizedReference \| None` | Parse a Vulgate citation string into a structured reference |
+| `scriptura.lookup_book(abbr)`        | `Book \| None`                | Look up a `Book` enum by abbreviation, name, or OSIS ID     |
+| `scriptura.book_name(book, locale?)` | `str`                         | Localised book name (17 locales)                            |
 
 ### Frontend options
 
-| Function | Returns | Description |
-|----------|---------|-------------|
-| `options.get_mass_options()` | `MassOptions` | All user-configurable options (rubrics, mass types, orders, languages, votives, communes, ordines) |
-| `options.get_languages_from_disk(missa_path)` | `tuple[Option, ...]` | Discover available languages by scanning the `missa/` directory |
+| Function                                      | Returns              | Description                                                                                        |
+|-----------------------------------------------|----------------------|----------------------------------------------------------------------------------------------------|
+| `options.get_mass_options()`                  | `MassOptions`        | All user-configurable options (rubrics, mass types, orders, languages, votives, communes, ordines) |
+| `options.get_languages_from_disk(missa_path)` | `tuple[Option, ...]` | Discover available languages by scanning the `missa/` directory                                    |
 
 ### Key types
 
-| Type | Module | Description |
-|------|--------|-------------|
-| `MissalConfig` | `sacrum.captator.resolver` | Central frozen dataclass: rubric, mass type, order, language, temporal context |
-| `Rubric` | `sacrum.captator.resolver` | Enum: `TRIDENT_1570`, `TRIDENT_1910`, `TRIDENT_1930`, `RUBRICAE_1955`, `RUBRICAE_1960` |
-| `MassType` | `sacrum.captator.resolver` | Enum: `SOLEMN`, `READ`, `REQUIEM` |
-| `OrderVariant` | `sacrum.captator.resolver` | Enum: `ROMAN`, `MONASTIC`, `DOMINICAN`, `CISTERCIAN` |
-| `MassInfo` | `sacrum.captator.directorium` | Date + name + canonical name + rank + rank_name + colour + commemorations |
-| `MassName` | `sacrum.captator.directorium` | Lighter: name + canonical name + rank + commemorations |
-| `MassDay` | `sacrum.captator.directorium` | Full result: occurrence + resolved document AST |
-| `OccurrenceResult` | `sacrum.captator.directorium` | Winner file, rank, names, commemorations, BVM Saturday, Requiem flags |
-| `LiturgicalColor` | `sacrum.captator.directorium` | Enum: `WHITE`, `RED`, `GREEN`, `VIOLET`, `BLACK`, `ROSE` |
-| `Document` | `sacrum.captator.parser` | Parsed AST: preamble + list of sections |
-| `Section` | `sacrum.captator.parser` | AST section: header + body lines |
-| `HoraeResult` | `horae` | Sunrise, sunset, 8 canonical hours, temporal hour durations |
-| `HoraCanonica` | `horae` | Single hour: name, start, end, duration, Roman hour, day/night flag |
-| `NormalizedReference` | `scriptura` | Parsed citation: book, chapter, verse range, verse IDs |
-| `Book` | `scriptura` | IntEnum: 73 books of the Vulgate canon |
+| Type                  | Module                        | Description                                                                            |
+|-----------------------|-------------------------------|----------------------------------------------------------------------------------------|
+| `MissalConfig`        | `sacrum.captator.resolver`    | Central frozen dataclass: rubric, mass type, order, language, temporal context         |
+| `Rubric`              | `sacrum.captator.resolver`    | Enum: `TRIDENT_1570`, `TRIDENT_1910`, `TRIDENT_1930`, `RUBRICAE_1955`, `RUBRICAE_1960` |
+| `MassType`            | `sacrum.captator.resolver`    | Enum: `SOLEMN`, `READ`, `REQUIEM`                                                      |
+| `OrderVariant`        | `sacrum.captator.resolver`    | Enum: `ROMAN`, `MONASTIC`, `DOMINICAN`, `CISTERCIAN`                                   |
+| `MassInfo`            | `sacrum.captator.directorium` | Date + name + canonical name + rank + rank_name + colour + commemorations              |
+| `MassName`            | `sacrum.captator.directorium` | Lighter: name + canonical name + rank + commemorations                                 |
+| `MassDay`             | `sacrum.captator.directorium` | Full result: occurrence + resolved document AST                                        |
+| `OccurrenceResult`    | `sacrum.captator.directorium` | Winner file, rank, names, commemorations, BVM Saturday, Requiem flags                  |
+| `LiturgicalColor`     | `sacrum.captator.directorium` | Enum: `WHITE`, `RED`, `GREEN`, `VIOLET`, `BLACK`, `ROSE`                               |
+| `Document`            | `sacrum.captator.parser`      | Parsed AST: preamble + list of sections                                                |
+| `Section`             | `sacrum.captator.parser`      | AST section: header + body lines                                                       |
+| `HoraeResult`         | `horae`                       | Sunrise, sunset, 8 canonical hours, temporal hour durations                            |
+| `HoraCanonica`        | `horae`                       | Single hour: name, start, end, duration, Roman hour, day/night flag                    |
+| `NormalizedReference` | `scriptura`                   | Parsed citation: book, chapter, verse range, verse IDs                                 |
+| `Book`                | `scriptura`                   | IntEnum: 73 books of the Vulgate canon                                                 |
 
 ## Supported rubrical editions
 
-| Enum value | Edition | Year |
-|------------|---------|------|
-| `Rubric.TRIDENT_1570` | Original Tridentine (Pius V) | 1570 |
-| `Rubric.TRIDENT_1910` | Divino Afflatu (Pius X) | 1911 |
-| `Rubric.TRIDENT_1930` | Post-Divino Afflatu (Pius XI) | ~1930 |
-| `Rubric.RUBRICAE_1955` | Simplified rubrics (Pius XII) | 1955 |
-| `Rubric.RUBRICAE_1960` | Code of Rubrics / 1962 Missal (John XXIII) | 1960 |
+| Enum value             | Edition                                    | Year  |
+|------------------------|--------------------------------------------|-------|
+| `Rubric.TRIDENT_1570`  | Original Tridentine (Pius V)               | 1570  |
+| `Rubric.TRIDENT_1910`  | Divino Afflatu (Pius X)                    | 1911  |
+| `Rubric.TRIDENT_1930`  | Post-Divino Afflatu (Pius XI)              | ~1930 |
+| `Rubric.RUBRICAE_1955` | Simplified rubrics (Pius XII)              | 1955  |
+| `Rubric.RUBRICAE_1960` | Code of Rubrics / 1962 Missal (John XXIII) | 1960  |
 
 Each edition affects the liturgical calendar (which feasts exist, their
 ranks, octaves, vigils), the temporal file variants used, and the
@@ -538,14 +538,14 @@ Roman Rite.  Colours are determined algorithmically from the Latin feast
 name (ported from the Perl `liturgical_color()` function in Divinum
 Officium), plus special detection for Gaudete and Laetare Sundays.
 
-| Value | Vestments | When used |
-|-------|-----------|-----------|
-| `WHITE` | White | Christmas, Easter, Confessors, Virgins, Our Lady, Angels, Dedications |
-| `RED` | Red | Pentecost, Martyrs, Apostles, Evangelists, Holy Cross, Precious Blood |
-| `GREEN` | Green | Sundays and ferias after Epiphany and after Pentecost (Ordinary Time) |
-| `VIOLET` | Violet | Advent, Lent, Passiontide, Vigils, Ember Days, Rogation Days |
-| `BLACK` | Black | Masses for the Dead (Requiem), Good Friday |
-| `ROSE` | Rose | Gaudete Sunday (Advent III) and Laetare Sunday (Lent IV) |
+| Value    | Vestments | When used                                                             |
+|----------|-----------|-----------------------------------------------------------------------|
+| `WHITE`  | White     | Christmas, Easter, Confessors, Virgins, Our Lady, Angels, Dedications |
+| `RED`    | Red       | Pentecost, Martyrs, Apostles, Evangelists, Holy Cross, Precious Blood |
+| `GREEN`  | Green     | Sundays and ferias after Epiphany and after Pentecost (Ordinary Time) |
+| `VIOLET` | Violet    | Advent, Lent, Passiontide, Vigils, Ember Days, Rogation Days          |
+| `BLACK`  | Black     | Masses for the Dead (Requiem), Good Friday                            |
+| `ROSE`   | Rose      | Gaudete Sunday (Advent III) and Laetare Sunday (Lent IV)              |
 
 ## Current limitations
 
